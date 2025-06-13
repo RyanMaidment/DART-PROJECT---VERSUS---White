@@ -36,9 +36,9 @@ function updateTable(table, newData) {
     const defaultTables = ["myTable2", "myTable3", "myTable4", "myTable5", "myTable6"];
     const specialTable = "myTable1";
 
-    if (!defaultTables.includes(table.id) && table.id !== specialTable) {
-        console.log(`Skipping table: ${table.id}`);
-        return; // Do not update if not in the allowed list
+//    if (!defaultTables.includes(table.id) && table.id !== specialTable) {
+//        console.log(`Skipping table: ${table.id}`);
+//        return; // Do not update if not in the allowed list
     }
 
     for (let i = 0; i < newData.length; i++) {
