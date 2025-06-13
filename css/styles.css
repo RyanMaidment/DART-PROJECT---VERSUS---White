@@ -629,7 +629,10 @@ tr:nth-child(2) td {
 .data-container1 tr:nth-child(8) td:nth-child(1),
 .data-container1 tr:nth-child(10) td:nth-child(1),
 .data-container1 tr:nth-child(12) td:nth-child(1),
-.data-container1 tr:nth-child(14) td:nth-child(1) {
+.data-container1 tr:nth-child(14) td:nth-child(1),
+.data-container1 tr:nth-child(16) td:nth-child(1),
+.data-container1 tr:nth-child(18) td:nth-child(1),
+.data-container1 tr:nth-child(20) td:nth-child(1) {
     color: white;
     font-weight: bold;
     /* background-image: url('pics311.png');
@@ -642,13 +645,16 @@ tr:nth-child(2) td {
     transform: scale(0.9) translatex(11px);
 }
 
-.data-container6 tr:nth-child(2) td:nth-child(1),
-.data-container6 tr:nth-child(4) td:nth-child(1),
-.data-container6 tr:nth-child(6) td:nth-child(1),
-.data-container6 tr:nth-child(8) td:nth-child(1),
-.data-container6 tr:nth-child(10) td:nth-child(1),
-.data-container6 tr:nth-child(12) td:nth-child(1),
-.data-container6 tr:nth-child(14) td:nth-child(1) {
+.data-container1 tr:nth-child(2) td:nth-child(1),
+.data-container1 tr:nth-child(4) td:nth-child(1),
+.data-container1 tr:nth-child(6) td:nth-child(1),
+.data-container1 tr:nth-child(8) td:nth-child(1),
+.data-container1 tr:nth-child(10) td:nth-child(1),
+.data-container1 tr:nth-child(12) td:nth-child(1),
+.data-container1 tr:nth-child(14) td:nth-child(1),
+.data-container1 tr:nth-child(16) td:nth-child(1),
+.data-container1 tr:nth-child(18) td:nth-child(1),
+.data-container1 tr:nth-child(20) td:nth-child(1) {
     color: white;
     font-weight: bold;
     /* background-image: url('pics311.png');
@@ -667,7 +673,10 @@ tr:nth-child(2) td {
 .data-container1 tr:nth-child(8) td:nth-child(3),
 .data-container1 tr:nth-child(10) td:nth-child(3),
 .data-container1 tr:nth-child(12) td:nth-child(3),
-.data-container1 tr:nth-child(14) td:nth-child(3) {
+.data-container1 tr:nth-child(14) td:nth-child(3),
+.data-container1 tr:nth-child(16) td:nth-child(3),
+.data-container1 tr:nth-child(18) td:nth-child(3),
+.data-container1 tr:nth-child(20) td:nth-child(3) {
     color:  white;
     font-weight: bold;
     /* background-image: url('pics3311.png');
@@ -680,13 +689,16 @@ tr:nth-child(2) td {
     transform: scale(0.9) translatex(-12px);
 }
 
-.data-container6 tr:nth-child(2) td:nth-child(3),
-.data-container6 tr:nth-child(4) td:nth-child(3),
-.data-container6 tr:nth-child(6) td:nth-child(3),
-.data-container6 tr:nth-child(8) td:nth-child(3),
-.data-container6 tr:nth-child(10) td:nth-child(3),
-.data-container6 tr:nth-child(12) td:nth-child(3),
-.data-container6 tr:nth-child(14) td:nth-child(3) {
+.data-container1 tr:nth-child(2) td:nth-child(3),
+.data-container1 tr:nth-child(4) td:nth-child(3),
+.data-container1 tr:nth-child(6) td:nth-child(3),
+.data-container1 tr:nth-child(8) td:nth-child(3),
+.data-container1 tr:nth-child(10) td:nth-child(3),
+.data-container1 tr:nth-child(12) td:nth-child(3),
+.data-container1 tr:nth-child(14) td:nth-child(3),
+.data-container1 tr:nth-child(16) td:nth-child(3),
+.data-container1 tr:nth-child(18) td:nth-child(3),
+.data-container1 tr:nth-child(20) td:nth-child(3) {
     color:  white;
     font-weight: bold;
     /* background-image: url('pics3311.png');

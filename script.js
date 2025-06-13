@@ -22,7 +22,6 @@ function fetchData(sheetId, tabName, containerId) {
             }
 
             // Update the table without changing row sizes
-            updateTable(table, values);
         })
         .catch(error => {
             console.error('Error fetching data:', error);
