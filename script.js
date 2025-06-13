@@ -1,6 +1,6 @@
 // Function to fetch and display data from Google Sheets API
 function fetchData(sheetId, tabName, containerId) {
-    const apiKey = 'AIzaSyAuy9kQaLxUs_W9lGXII32HY9Swg-C5Ozo'; // Replace with your API key
+    const apiKey = 'AIzaSyDh_M4gUwsZV3n9qqkPGOExG4DvOvnFH2g'; // Replace with your API key
     const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${tabName}?key=${apiKey}`;
 
     fetch(apiUrl)
@@ -37,16 +37,10 @@ function updateTable(table, newData) {
     const defaultTables = ["myTable2", "myTable3", "myTable4", "myTable5", "myTable6"];
     const specialTable = "myTable1";
 
-<<<<<<< HEAD
     if (!defaultTables.includes(table.id) && table.id !== specialTable) {
         console.log(`Skipping table: ${table.id}`);
         return; // Do not update if not in the allowed list
     }
-=======
-//    if (!defaultTables.includes(table.id) && table.id !== specialTable) {
-//        console.log(`Skipping table: ${table.id}`);
-//        return; // Do not update if not in the allowed list
->>>>>>> e42d6d27fbdfaf20554a25d024b24abd46bbbe08
 
     for (let i = 0; i < newData.length; i++) {
         let row = table.rows[i];
@@ -94,12 +88,12 @@ function updateTable(table, newData) {
 
 // Function to automatically fetch data every 7 seconds
 function autoFetchData() {
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'Sheet1', 'data-container1');
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'Sheet2', 'data-container2');
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'Sheet3', 'data-container3');
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'Sheet4', 'data-container4');
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'Chat', 'data-container5');
-    fetchData('1sF2KAim1dLDGu6phCrbdB8SVPLvTMKAkaYIrgq_l6hU', 'SheetA', 'data-container6');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet1', 'data-container1');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet2', 'data-container2');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet3', 'data-container3');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet4', 'data-container4');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Chat', 'data-container5');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'SheetA', 'data-container6');
     setTimeout(autoFetchData, 7000);
 }
 
