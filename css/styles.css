@@ -995,9 +995,26 @@ body::before {
     }
 }
 
-/* For even smaller screens */
-@media (max-width: 600px) {
-    #data-container1 table {
+/* Responsive fix for #myTable1 to prevent overlap */
+@media (max-width: 1024px) {
+    #myTable1 {
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+        overflow-x: auto;
+        margin: 0 auto 10px auto;
+        display: block !important;
+    }
+    #myTable1 table {
+        width: 100% !important;
+        min-width: 600px; /* Adjust as needed for your columns */
+        font-size: 14px;
+        table-layout: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    #myTable1 table {
         min-width: 400px;
         font-size: 10px;
     }
