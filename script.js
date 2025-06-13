@@ -80,7 +80,6 @@ function updateTable(table, newData) {
     while (table.rows.length > newData.length) {
         table.deleteRow(-1);
     }
-}
 
 
 
