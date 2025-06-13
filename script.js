@@ -27,7 +27,7 @@ function fetchData(sheetId, tabName, containerId) {
         .catch(error => {
             console.error('Error fetching data:', error);
             // Optionally, refresh the page on error
-            location.reload();
+            
         });
 }
 
