@@ -39,7 +39,6 @@ function updateTable(table, newData) {
 //    if (!defaultTables.includes(table.id) && table.id !== specialTable) {
 //        console.log(`Skipping table: ${table.id}`);
 //        return; // Do not update if not in the allowed list
-    }
 
     for (let i = 0; i < newData.length; i++) {
         let row = table.rows[i];
@@ -80,6 +79,7 @@ function updateTable(table, newData) {
     while (table.rows.length > newData.length) {
         table.deleteRow(-1);
     }
+}
 
 
 
