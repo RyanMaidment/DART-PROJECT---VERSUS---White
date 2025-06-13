@@ -861,3 +861,119 @@ th {
         box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
     }
 }
+
+/* --- Responsive Improvements --- */
+
+/* Ensure tables and containers are scrollable on small screens */
+@media (max-width: 1024px) {
+    .table-container,
+    .table-container1 {
+        max-width: 100vw;
+        height: auto;
+        min-width: 320px;
+        overflow-x: auto;
+    }
+    table {
+        font-size: 18px;
+        width: 100%;
+    }
+    .logo-image {
+        width: 80vw;
+        max-width: 350px;
+    }
+}
+
+/* Stack containers vertically and reduce gaps on mobile */
+@media (max-width: 768px) {
+    .data-containers {
+        flex-direction: column;
+        gap: 10px;
+        width: 100vw;
+        padding: 0 5px;
+    }
+    .table-container,
+    .table-container1 {
+        min-width: 0;
+        width: 100%;
+        height: auto;
+        box-sizing: border-box;
+        margin: 0 auto 10px auto;
+    }
+    .logo-image {
+        width: 95vw;
+        max-width: 250px;
+    }
+    .table-container table,
+    .table-container1 table {
+        width: 100%;
+        font-size: 12px;
+    }
+    .table-text,
+    .table-text1 {
+        font-size: 18px !important;
+    }
+    th, td {
+        font-size: 10px;
+        padding: 2px;
+    }
+    .leaderboard-text,
+    .subheading-text {
+        font-size: 14px;
+    }
+    .data-container tr:not(:first-child) td:not(:first-child),
+    .data-container2 tr:not(:first-child) td:nth-child(2) {
+        font-size: 12px;
+        padding: 8px;
+    }
+    .data-container tr:nth-child(2) td {
+        font-size: 14px;
+    }
+    .data-container1 td:nth-child(1),
+    .data-container1 td:nth-child(5) {
+        font-size: 18px;
+        padding: 4px;
+    }
+    .data-container1 td:nth-child(2),
+    .data-container1 td:nth-child(4),
+    .data-container1 td:nth-child(8) {
+        font-size: 14px;
+        padding: 4px;
+    }
+    .data-container1 td:nth-child(3),
+    .data-container1 td:nth-child(6) {
+        font-size: 12px;
+        padding: 4px;
+    }
+    .data-container1 td,
+    .data-container6 td {
+        font-size: 12px;
+        padding: 2px;
+    }
+    .data-container5 td:first-child {
+        font-size: 14px;
+    }
+    .data-container5 tr:nth-child(6) td {
+        font-size: 18px;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+    .logo-image {
+        width: 90vw;
+        max-width: 180px;
+    }
+    .table-text,
+    .table-text1 {
+        font-size: 12px !important;
+    }
+    th, td {
+        font-size: 8px;
+        padding: 1px;
+    }
+}
+
+/* Make sure background covers all screen sizes */
+body::before {
+    background-size: cover;
+}
