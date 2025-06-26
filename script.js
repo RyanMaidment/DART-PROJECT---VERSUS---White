@@ -27,7 +27,6 @@ function fetchData(sheetId, tabName, containerId) {
         .catch(error => {
             console.error('Error fetching data:', error);
             // Optionally, refresh the page on error
-            location.reload();
         });
 }
 
@@ -91,7 +90,6 @@ function autoFetchData() {
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet1', 'data-container1');
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet2', 'data-container2');
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet3', 'data-container3');
-    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet4', 'data-container4');
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Chat', 'data-container5');
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'SheetA', 'data-container6');
     setTimeout(autoFetchData, 7000);
