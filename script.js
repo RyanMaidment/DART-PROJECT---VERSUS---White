@@ -87,11 +87,11 @@ function updateTable(table, newData) {
 
 // Function to automatically fetch data every 7 seconds
 function autoFetchData() {
-    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'TonightsMatchesDisplay', 'data-container1');
-    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'MVPDisplay', 'data-container2');
-    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'WomenTop12Display', 'data-container3');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet1', 'data-container1');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet2', 'data-container2');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Sheet3', 'data-container3');
     fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'Chat', 'data-container5');
-    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'MenTop12Display', 'data-container6');
+    fetchData('1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk', 'SheetA', 'data-container6');
     setTimeout(autoFetchData, 7000);
 }
 
