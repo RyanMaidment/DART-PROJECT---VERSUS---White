@@ -14,9 +14,12 @@
     font-style: normal;
   }
   
-body, html {
-    overflow-x: hidden;
-    overflow-y: hidden;
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     font-family: 'Verdana';
 }
 
@@ -32,6 +35,29 @@ body::before {
     background-size: cover;
     background-size: 200%;
     /* filter: blur(1px); */
+}
+
+/*
+ * SCALE WRAPPER
+ * The whole layout below is designed at a fixed 1920x1080 reference
+ * resolution (all the px font sizes, clip-paths, and fixed heights
+ * assume this). Rather than fight that with breakpoints, we keep the
+ * design at native size and scale the entire block uniformly to fit
+ * whatever window/screen it's displayed in. script.js sets the
+ * transform: scale(...) on this element and updates it on resize,
+ * so it resizes smoothly and continuously instead of jumping between
+ * fixed breakpoints.
+ */
+#scale-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1920px;
+    height: 1080px;
+    margin-top: -540px;
+    margin-left: -960px;
+    transform-origin: center center;
+    will-change: transform;
 }
 
 .data-containers {
@@ -200,114 +226,13 @@ tr:nth-child(1) {
     margin-top: 0px;
 }
 
-/* Responsive Styles */
-@media only screen and (max-width: 768px) {
-
-    .logo-image {
-        width: 90%;
-    }
-
-    .leaderboard-text,
-    .subheading-text {
-        font-size: 10px;
-    }
-
-    .data-container {
-        margin-top: 0px;
-    }
-    
-    .data-containers td {
-        font-size: 10px;
-    }
-
-    .data-containers th {
-        font-size: 8px;
-    }
-
-    .table-container .table-text,
-    .table-container1 .table-text1 {
-        text-align: center;
-        color: white;
-        font-size: 16px !important; /* Adjust the font size for smaller screens */
-        margin: 5px !important; /* Adjust margin for smaller screens */
-    }
-
-    .body, html {
-        overflow-x: scroll;
-        overflow-y: scroll;
-        padding-bottom: 20px;
-    }
-
-    th:first-child, td:first-child {
-        padding: 0px;
-    }
-
-    .data-containers td:nth-child(2) {
-        padding-left: 10px;
-        letter-spacing: 1px;
-    }
-
-    .table-container .data-container {
-        margin-top: 15px;
-    }
-
-    .data-containers :nth-child(2) td {
-        font-size: 14px;
-    }
-
-    .data-containers .table-container1 table {
-        width: 95%;
-    }
-}
-
-@media only screen and (min-width: 3840px) {
-
-        .logo-image {
-        width: 55%;
-    }
-
-    body {
-        overflow-y: hidden;
-        overflow-x: hidden;
-    }
-
-    .data-containers th {
-        font-size: 36px;
-    }
-
-    .data-container td {
-        font-size: 40px;
-        color: white;
-    }
-
-    .table-container1 td:nth-child(2) {
-        letter-spacing: 8px;
-        color: white;
-    }
-
-    .table-container td:nth-child(2) {
-        letter-spacing: 8px;
-    }
-
-    .data-containers .table-container .table-text, .table-container1 .table-text1 {
-        font-size: 65px;
-    }
-
-    .data-containers :nth-child(2) td {
-        font-size: 40px;
-        /* padding-top: 20px;
-        padding-bottom: 20px; */
-        color: white;
-    }
-
-    .table-container {
-        margin-top: 0%;
-    }
-
-    .data-containers th:nth-child(7) {
-        padding: 0px;
-      }
-}
+/*
+ * NOTE: The old fixed-breakpoint @media rules that used to live here
+ * (max-width: 768px, min-width: 3840px) have been removed. They fought
+ * with the pixel-precise layout and only handled two exact widths.
+ * The #scale-wrapper + script.js combo now scales the whole 1920x1080
+ * design smoothly to any window/screen size, which replaces them.
+ */
 
 .data-container5 td:first-child {
     font-size: 30px;
