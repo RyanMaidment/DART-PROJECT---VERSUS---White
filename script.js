@@ -1,3 +1,40 @@
+// ---------------------------------------------------------------------
+// RESPONSIVE SCALING
+// The layout inside #scale-wrapper is built at a fixed 1920x1080
+// reference resolution (all the px font sizes, clip-paths, and fixed
+// heights in styles.css assume this). Instead of maintaining separate
+// mobile/tablet/4K stylesheets that fight the pixel-precise design, we
+// scale the whole block uniformly to fit whatever window or screen it
+// is shown in (browser tab, OBS/vMix browser source, projector, etc.).
+// This keeps every element perfectly proportioned and resizes smoothly
+// and continuously rather than jumping between fixed breakpoints.
+// ---------------------------------------------------------------------
+const REFERENCE_WIDTH = 1920;
+const REFERENCE_HEIGHT = 1080;
+
+function updateScale() {
+    const wrapper = document.getElementById('scale-wrapper');
+    if (!wrapper) return;
+
+    const scale = Math.min(
+        window.innerWidth / REFERENCE_WIDTH,
+        window.innerHeight / REFERENCE_HEIGHT
+    );
+
+    wrapper.style.transform = `scale(${scale})`;
+}
+
+// Debounce resize handling so we're not recalculating on every pixel
+// of a drag-resize.
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(updateScale, 50);
+});
+
+// Set the initial scale as soon as the script runs.
+updateScale();
+
 // Function to fetch and display data from Google Sheets API
 function fetchData(sheetId, tabName, containerId) {
     const apiKey = 'AIzaSyDh_M4gUwsZV3n9qqkPGOExG4DvOvnFH2g'; // Replace with your API key
