@@ -17,9 +17,8 @@
 html, body {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     font-family: 'Verdana';
 }
 
@@ -38,23 +37,13 @@ body::before {
 }
 
 /*
- * SCALE WRAPPER
- * The whole layout below is designed at a fixed 1920x1080 reference
- * resolution (all the px font sizes, clip-paths, and fixed heights
- * assume this). Rather than fight that with breakpoints, we keep the
- * design at native size and scale the entire block uniformly to fit
- * whatever window/screen it's displayed in. script.js sets the
- * transform: scale(...) on this element and updates it on resize,
- * so it resizes smoothly and continuously instead of jumping between
- * fixed breakpoints.
+ * This layout is built with flexbox and percentage widths
+ * (.table-container, #data-container1 { flex: 0 0 25% }, etc.), so it
+ * already reflows to fit its container. The remaining fixed-px values
+ * below are font sizes and a few container heights; those are made
+ * fluid (clamp()/min-height) further down instead of forcing the whole
+ * page into an artificial fixed-resolution box.
  */
-#scale-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: top left;
-    will-change: transform;
-}
 
 .data-containers {
     margin: 0 auto; /* Center the container */
@@ -71,7 +60,7 @@ body::before {
     width: 100%;
     box-shadow: 0 1px 20px rgba(0, 153, 169, 0); /* Add box shadow to tables */
     max-width: 2400px;
-    height: 850px;
+    min-height: 600px;
 }
 
 .table-container {
@@ -97,7 +86,7 @@ body::before {
 }
 
 #table1 {
-    height: 490px;
+    min-height: 490px;
 }
 
 .table-container {
@@ -126,14 +115,14 @@ body::before {
 
 .data-container tr:first-child {
     color: gold;
-    font-size: 12px;
+    font-size: clamp(8px, 0.625cqw, 14px); /* was 12px */
     text-shadow: rgb(49, 49, 49) -3px 0 20px;
 }
 
 tr:nth-child(1) {
     /* background-color: rgba(0, 0, 0, 0.3); */
     color: gold;
-    font-size: 12px;
+    font-size: clamp(8px, 0.625cqw, 14px); /* was 12px */
     text-shadow: rgb(49, 49, 49) -3px 0 20px;
 }
 
@@ -202,7 +191,7 @@ tr:nth-child(1) {
 
 .leaderboard-text,
 .subheading-text {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     margin-bottom: 0px;
     animation: scaleText 1s ease-in-out;
 }
@@ -218,7 +207,7 @@ tr:nth-child(1) {
 
 .subheading-text {
     text-align: center;
-    font-size: 18px;
+    font-size: clamp(8px, 0.938cqw, 21px); /* was 18px */
     margin-top: 0px;
 }
 
@@ -231,7 +220,7 @@ tr:nth-child(1) {
  */
 
 .data-container5 td:first-child {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     /* background: linear-gradient(to bottom, rgba(0, 159, 170, 0.479)rgba(191, 1, 239, 0.301)3); */
     /* background-color: #f70000; */
     padding: 0px;
@@ -247,14 +236,14 @@ tr:nth-child(1) {
 .data-container5 :first-child {
     margin-top: 10px;
     table-layout: fixed;
-    font-size: 32px;
+    font-size: clamp(14px, 1.667cqw, 37px); /* was 32px */
     color: rgb(255, 255, 255);
     padding: 8px;
 }
 
 .data-container5 tr:nth-child(6) td {
     table-layout: fixed;
-    font-size: 44px;
+    font-size: clamp(20px, 2.292cqw, 51px); /* was 44px */
     color: lime;
     padding: 0px;
     font-weight: bold;
@@ -318,7 +307,7 @@ table {
 }
 
 .table-container table {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     color: white;
     margin-top: 8px;
     table-layout: fixed; /* Ensure table does not expand */
@@ -352,7 +341,7 @@ th {
 .table-container1 .table-text1 {
     font-family: 'MinstrelPosterWHG';
     text-align: center;
-    font-size: 35px;
+    font-size: clamp(16px, 1.823cqw, 40px); /* was 35px */
     color: white;
     margin: 0px; /* Adjust margin for smaller screens */
     -webkit-text-stroke: 0.5px black;
@@ -362,7 +351,7 @@ th {
 
 .table-text,
 .table-text1 {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
 }
 
 .data-container th:first-child,
@@ -384,7 +373,7 @@ th {
 }
 
 .data-container tr:not(:first-child) td:not(:first-child) {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     /* -webkit-text-stroke: 0.5px black; */
     /* width: 60%;  */
     /* max-width: 50%; */
@@ -393,7 +382,7 @@ th {
 }
 
 .data-container2 tr:not(:first-child) td:nth-child(2) {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     /* -webkit-text-stroke: 0.5px black; */
     /* width: 60%; */
     padding: 50px;
@@ -425,7 +414,7 @@ th {
 
 .data-container tr:nth-child(n+2):nth-child(-n+13) td:nth-child(1) {
     clip-path: polygon(40% 0%, 100% 0%, 95% 100%, 0% 100%);
-    font-size: 20px;
+    font-size: clamp(9px, 1.042cqw, 23px); /* was 20px */
     text-align: right;
 }
 
@@ -439,7 +428,7 @@ th {
 
 .data-container2 tr:nth-child(n+2):nth-child(-n+13) td:nth-child(1) {
     clip-path: polygon(40% 0%, 100% 0%, 95% 100%, 0% 100%);
-    font-size: 20px;
+    font-size: clamp(9px, 1.042cqw, 23px); /* was 20px */
     text-align: right;
 }
 
@@ -461,7 +450,7 @@ th {
 
 .data-container1 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(4) {
     clip-path: polygon(0% 20%, 30% 20%, 20% 100%, 0% 100%);
-    font-size: 50px;
+    font-size: clamp(22px, 2.604cqw, 57px); /* was 50px */
     text-align: left;
     background: linear-gradient(to bottom, rgba(255, 228, 6, 0.86), rgba(19, 19, 19, 0.55));
     transform: scale(0.8) translatex(-105px);
@@ -483,18 +472,18 @@ th {
 
 .data-container1 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(2) {
     clip-path: polygon(16% 0%, 85% 0%, 75% 100%, 25% 100%);
-    font-size: 40px;
+    font-size: clamp(18px, 2.083cqw, 46px); /* was 40px */
 }
 
 .data-container6 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(2) {
     /* clip-path: polygon(16% 0%, 85% 0%, 75% 100%, 25% 100%); */
-    font-size: 35px;
+    font-size: clamp(16px, 1.823cqw, 40px); /* was 35px */
     font-weight: bold;
 }
 
 /* .data-container6 tr:nth-child(n+2):nth-child(-n+14) td:nth-child(4) {
     clip-path: polygon(0% 20%, 30% 20%, 20% 100%, 0% 100%);
-    font-size: 65px;
+    font-size: clamp(29px, 3.385cqw, 75px); /* was 65px */
     text-align: left;
     background: linear-gradient(to bottom, rgba(255, 228, 6, 0.86), rgba(19, 19, 19, 0.55));
     transform: scale(0.8) translatex(-105px);
@@ -519,7 +508,7 @@ th {
 }
 
 .data-container tr:nth-child(2) td {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     color: lime;
 }
 
@@ -561,16 +550,18 @@ tr:nth-child(2) td {
     color: white;
     font-weight: bold;
     text-align: center;
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     text-shadow: rgb(124, 0, 0) 1px 0 20px;
     transform: scale(0.9) translatex(11px);
 }
 
 .data-container1 tr:not(:first-child) td:nth-child(2) {
-    padding: 0px;
+    padding: 4px 2px;
     background: linear-gradient(to bottom, rgb(0, 171, 255, 0.9), rgb(19, 19, 19, 0.9));
     color: white;
-    font-size: 35px;
+    font-size: clamp(16px, 1.823cqw, 40px); /* was 35px */
+    line-height: 1.15;
+    overflow-wrap: break-word;
     text-shadow: rgb(0, 0, 0) -3px 0 20px;
     font-family: 'Coburn';
 }
@@ -579,7 +570,7 @@ tr:nth-child(2) td {
     color: white;
     font-weight: bold;
     text-align: center;
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     text-shadow: rgb(0, 50, 255) 1px 0 20px;
     transform: scale(0.9) translatex(-12px);
 }
@@ -587,19 +578,19 @@ tr:nth-child(2) td {
 .data-container1 tr:not(:first-child) td:nth-child(4) {
     padding-left: 5px;
     padding-right: 5px;
-    font-size: 40px;
+    font-size: clamp(18px, 2.083cqw, 46px); /* was 40px */
     font-weight: bold;
 }
 
 .data-container1 tr:not(:first-child) td:nth-child(5) {
     padding-left: 15px;
     padding-right: 15px;
-    font-size: 40px;
+    font-size: clamp(18px, 2.083cqw, 46px); /* was 40px */
     font-weight: bold;
 }
 
 .data-container1 tr:not(:first-child) td:nth-child(6) {
-    font-size: 30px;
+    font-size: clamp(14px, 1.562cqw, 34px); /* was 30px */
     font-weight: bold;
 }
 
@@ -609,13 +600,13 @@ tr:nth-child(2) td {
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(100, 100, 100, 0.5));
     text-shadow: rgb(0 77 124) 1px 0 20px;
     font-weight: bold;
-    font-size: 35px;
+    font-size: clamp(16px, 1.823cqw, 40px); /* was 35px */
 }
 
 .data-container1 tr:not(:first-child) td:nth-child(8) {
     padding-left: 5px;
     padding-right: 5px;
-    font-size: 40px;
+    font-size: clamp(18px, 2.083cqw, 46px); /* was 40px */
     font-weight: bold;
     color: white;
     background-color: rgba(0, 128, 0, 0.527);
@@ -689,7 +680,6 @@ tr:nth-child(2) td {
     gap: 20px;
     width: 100%;
     min-height: 600px;   /* Add this line for a minimum height */
-    height: 700px;       /* Or set a fixed height if you prefer */
 }
 
 .data-container1.split-three .section {
@@ -722,6 +712,7 @@ tr:nth-child(2) td {
     flex-direction: column;
     align-items: stretch;
     height: 100%;
+    container-type: inline-size;
 }
 
 .right-stack {
@@ -742,6 +733,7 @@ tr:nth-child(2) td {
     flex-direction: column;
     align-items: stretch;
     height: 100%;
+    container-type: inline-size;
 }
 
 #myTable1 td, #myTable1 th {
@@ -750,7 +742,7 @@ tr:nth-child(2) td {
 }
 
 #myTable1 tr {
-    height: 48px; /* Adjust as needed for more/less spacing */
+    min-height: 48px; /* Grows if a long team name wraps to 2 lines */
 }
 
 .data-container-right {
@@ -760,6 +752,7 @@ tr:nth-child(2) td {
     flex-direction: column;
     align-items: stretch;
     height: 100%;
+    container-type: inline-size;
 }
 
 .data-container-right1 {
