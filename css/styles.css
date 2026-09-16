@@ -462,12 +462,12 @@ th {
 
 .data-container1 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(1) {
     clip-path: polygon(0% 0%, 90% 0%, 100% 100%, 0% 100%);
-    transform: translatex(60px);
+    transform: translatex(0.5cqw); /* was 60px - much smaller offset so the team name isn't pushed away from the edge, closing the gap */
 }
 
 .data-container1 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(3) {
     clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);
-    transform: translatex(-60px);
+    transform: translatex(-0.5cqw); /* was -60px - matching reduction on the home-team side */
 }
 
 .data-container1 tr:nth-child(n+2):nth-child(-n+20) td:nth-child(2) {
@@ -734,6 +734,15 @@ tr:nth-child(2) td {
     align-items: stretch;
     height: 100%;
     container-type: inline-size;
+}
+
+#myTable1 td:nth-child(1),
+#myTable1 td:nth-child(3) {
+    width: 42%; /* team names need far more room than the score */
+}
+
+#myTable1 td:nth-child(2) {
+    width: 16%; /* "0 : 0" doesn't need a full third of the table */
 }
 
 #myTable1 td, #myTable1 th {
