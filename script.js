@@ -41,6 +41,12 @@ function updateTable(table, newData) {
         return; // Do not update if not in the allowed list
     }
 
+    // Drop rows where every cell is empty/whitespace, so a blank row in the
+    // sheet doesn't render as a visible gap in the table.
+    newData = newData.filter(row =>
+        row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+    );
+
     for (let i = 0; i < newData.length; i++) {
         let row = table.rows[i];
         if (!row) {
