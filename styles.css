@@ -332,8 +332,8 @@ html, body {
 }
 
 .medallion .name {
-  font-weight: 600;
-  font-size: clamp(11px, 1.35vh, 16px);
+  font-weight: 700;
+  font-size: clamp(15px, 2vh, 28px);
   color: var(--chalk);
   line-height: 1.15;
 }
