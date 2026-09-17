@@ -2,18 +2,30 @@
    Thursday Night Dart League — TV Scoreboard
    -------------------------------------------------------------------------
    How this works:
-   - All league content (matchups, awards, top 8s, news) lives in data.json,
-     sitting next to this file.
-   - To update the board, regenerate data.json from the spreadsheet with
-     `python3 xlsx_to_json.py Thursday_Dart_League.xlsx` (see README.md) and
-     overwrite the copy on whatever machine/server is driving the TV.
-   - This page polls data.json every POLL_MS and redraws only the values
-     that changed, with a short green flash, so the TV never needs to be
-     reloaded or touched during the night.
+   - The board reads directly from the live "Thursday Dart League" Google
+     Sheet — no API key, no backend. This only works because the sheet is
+     shared as "Anyone with the link – Viewer"; if that ever changes, the
+     loads below will start failing.
+   - It uses Google's visualization/gviz endpoint via a JSONP-style
+     <script> tag rather than fetch(), because that endpoint doesn't
+     reliably send CORS headers for cross-origin fetch() calls — a script
+     tag isn't subject to CORS at all, so this is the standard reliable
+     way to read a public sheet from another site.
+   - It polls every POLL_MS and re-renders only the values that changed
+     (a short green flash), so the TV updates itself the moment someone
+     edits a score, no reload, no rebuild, no deploy.
+   - If the sheet can't be reached (offline, sharing revoked, etc.) on the
+     very first load, it falls back to the snapshot in data.json so the
+     screen is never blank. data.json is otherwise unused — regenerating
+     it with xlsx_to_json.py is optional, just a way to keep that fallback
+     snapshot fresh.
    ========================================================================== */
 
-const POLL_MS = 8000;
+const SPREADSHEET_ID = '1dlA5vn3dlh0_JFZqtuCB9VlruYBHY_HyeVcZVuC7iwk';
+const POLL_MS = 7000;
+
 let lastData = null;
+let usedFallback = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   updateClock();
@@ -29,15 +41,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadData() {
   try {
-    const res = await fetch(`data.json?_=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await fetchLiveSheetData();
     render(data);
     lastData = data;
     setStatus(true);
   } catch (err) {
-    console.error('Could not load data.json:', err);
+    console.error('Could not read the Google Sheet:', err);
     setStatus(false);
+    if (!lastData && !usedFallback) {
+      usedFallback = true;
+      await loadFallback();
+    }
+  }
+}
+
+async function loadFallback() {
+  try {
+    const res = await fetch('data.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    render(data);
+    lastData = data;
+  } catch (err) {
+    console.error('No fallback data.json available either:', err);
   }
 }
 
@@ -48,11 +74,224 @@ function setStatus(ok) {
   if (ok) {
     dot.classList.add('live');
     const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    text.textContent = `Live — updated ${stamp}`;
+    text.textContent = `Live — synced ${stamp}`;
   } else {
     dot.classList.add('stale');
-    text.textContent = 'Could not refresh — showing last known scores';
+    text.textContent = 'Could not reach the sheet — showing last known scores';
   }
+}
+
+/* ----------------------------------------------------- live sheet fetch -- */
+
+let jsonpCounter = 0;
+
+// Sheets like Sheet1/Team run to ~1000 rows in the underlying workbook but
+// only ever have a handful of real ones — capping the queried range keeps
+// each poll small instead of shipping hundreds of empty rows every 7s.
+const SHEET_RANGES = {
+  Sheet1: 'A1:C40',
+  SheetA: 'A1:C10',
+  Sheet2: 'A1:F12',
+  Sheet3: 'A1:F12',
+  Team: 'A1:B25',
+  Chat: 'A1:A30',
+};
+
+function gvizScriptUrl(sheetName, callbackName) {
+  const base = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq`;
+  // headers=0 tells gviz "don't treat any row as a header", so every row
+  // in the sheet comes back as plain data, in order — the same shape our
+  // parse* functions below expect.
+  const tqx = `out:json;responseHandler:${callbackName}`;
+  const range = SHEET_RANGES[sheetName] ? `&range=${SHEET_RANGES[sheetName]}` : '';
+  return `${base}?headers=0&sheet=${encodeURIComponent(sheetName)}${range}&tqx=${encodeURIComponent(tqx)}&_=${Date.now()}`;
+}
+
+// Loads one tab via a JSONP <script> tag (not fetch — see file header) and
+// resolves with its rows as a plain array-of-arrays, e.g.
+// [["JustinV, RachelJ, KatieS - TEAM", "0  :  0", "LucL, LynnS, MaggieJ - TEAM"], ...]
+function fetchSheetRows(sheetName, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `__gvizCallback_${jsonpCounter++}`;
+    const script = document.createElement('script');
+    let settled = false;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`${sheetName}: timed out`));
+    }, timeoutMs);
+
+    window[callbackName] = (json) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (!json || json.status === 'error') {
+        reject(new Error(`${sheetName}: ${(json && json.errors && json.errors[0] && json.errors[0].detailed_message) || 'query error'}`));
+        return;
+      }
+      resolve(gvizTableToRows(json.table));
+    };
+
+    script.onerror = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`${sheetName}: failed to load`));
+    };
+
+    script.src = gvizScriptUrl(sheetName, callbackName);
+    document.head.appendChild(script);
+  });
+}
+
+function gvizTableToRows(table) {
+  if (!table || !Array.isArray(table.rows)) return [];
+  return table.rows.map(r =>
+    (r.c || []).map(cell => (cell && cell.v !== null && cell.v !== undefined) ? cell.v : '')
+  );
+}
+
+async function fetchLiveSheetData() {
+  const [sheet1, sheetA, sheet2, sheet3, team, chat] = await Promise.all([
+    fetchSheetRows('Sheet1'),
+    fetchSheetRows('SheetA'),
+    fetchSheetRows('Sheet2'),
+    fetchSheetRows('Sheet3'),
+    fetchSheetRows('Team'),
+    fetchSheetRows('Chat'),
+  ]);
+
+  const teamMap = buildTeamMap(team);
+
+  return {
+    matches: parseMatches(sheet1, teamMap),
+    awards: parseAwards(sheetA),
+    menTop8: parseTop8(sheet3),
+    womenTop8: parseTop8(sheet2),
+    news: parseNews(chat),
+  };
+}
+
+/* ------------------------------------------------------- sheet -> data -- */
+
+const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu;
+const NAME_FIXES = { 'Ken Mclean': 'Ken McLean', 'Kim Wb': 'Kim WB' };
+
+function titleCase(name) {
+  const tc = String(name || '').trim().split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+  return NAME_FIXES[tc] || tc;
+}
+
+function cleanRosterStr(s) {
+  return String(s || '').replace(/\s*-\s*TEAM\s*(\[\d+\])?\s*$/i, '').trim();
+}
+
+function splitNames(s) {
+  return s.split(',').map(p => p.trim()).filter(Boolean).map(p => {
+    const spaced = p.replace(/([a-z])(?=[A-Z])/g, '$1 ');
+    return titleCase(spaced);
+  });
+}
+
+function buildTeamMap(rows) {
+  const map = {};
+  for (let r = 1; r < rows.length; r++) {
+    const name = rows[r][1];
+    if (!name) continue;
+    const m = String(name).trim().match(/\[(\d+)\]\s*$/);
+    if (m) map[cleanRosterStr(name)] = m[1];
+  }
+  return map;
+}
+
+function parseMatches(rows, teamMap) {
+  const matches = [];
+  for (const row of rows) {
+    const [a, score, b] = row;
+    if (!a || !b || !score) continue;
+    const parts = String(score).split(':').map(x => x.trim());
+    if (parts.length !== 2) continue;
+    const sa = parseInt(parts[0], 10);
+    const sb = parseInt(parts[1], 10);
+    if (Number.isNaN(sa) || Number.isNaN(sb)) continue;
+
+    const aClean = cleanRosterStr(a);
+    const bClean = cleanRosterStr(b);
+    matches.push({
+      teamANum: teamMap[aClean] || '?',
+      teamAPlayers: splitNames(aClean),
+      scoreA: sa,
+      teamBNum: teamMap[bClean] || '?',
+      teamBPlayers: splitNames(bClean),
+      scoreB: sb,
+    });
+  }
+  return matches;
+}
+
+function parsePlayerRow(row) {
+  if (!row) return null;
+  const [rank, players, avg, , hs, hfin] = row;
+  if (!players) return null;
+  const badges = String(players).match(EMOJI_RE) || [];
+  const cleanName = String(players).replace(EMOJI_RE, '').trim();
+  const avgNum = parseFloat(avg);
+  const hsNum = parseFloat(hs);
+  const hfinNum = parseFloat(hfin);
+  return {
+    rank: rank ? parseInt(rank, 10) : null,
+    name: titleCase(cleanName),
+    badges,
+    avg: Number.isFinite(avgNum) ? Math.round(avgNum * 10) / 10 : null,
+    hs: Number.isFinite(hsNum) ? hsNum : null,
+    hfin: (Number.isFinite(hfinNum) && hfinNum) ? hfinNum : null,
+  };
+}
+
+function parseTop8(rows) {
+  const out = [];
+  for (let r = 1; r <= 8 && r < rows.length; r++) {
+    const parsed = parsePlayerRow(rows[r]);
+    if (parsed) out.push(parsed);
+  }
+  return out;
+}
+
+function parseAwards(rows) {
+  const awards = [];
+  for (let r = 2; r <= 5 && r < rows.length; r++) {
+    const [rawLabel, name, rating] = rows[r];
+    if (!rawLabel || !name) continue;
+    const gender = /\u2640/.test(rawLabel) ? 'women' : 'men';
+    const title = /SVP/i.test(rawLabel) ? 'SVP' : 'MVP';
+    const ratingNum = parseFloat(rating);
+    awards.push({
+      title,
+      gender,
+      name: titleCase(name),
+      rating: Number.isFinite(ratingNum) ? Math.round(ratingNum * 10) / 10 : rating,
+    });
+  }
+  return awards;
+}
+
+function parseNews(rows) {
+  const news = [];
+  for (let r = 1; r < rows.length; r++) {
+    const v = rows[r][0];
+    if (v && String(v).trim()) news.push(String(v).trim());
+  }
+  return news;
 }
 
 function render(data) {
