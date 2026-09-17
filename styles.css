@@ -7,19 +7,20 @@
    ========================================================================== */
 
 :root {
-  /* --- color tokens --- */
-  --wood: #170f09;
-  --wood-2: #241809;
-  --felt: #123424;
-  --felt-2: #0e2a1c;
-  --brass: #cda545;
-  --brass-dim: #8a6d2f;
-  --chalk: #f4efe2;
-  --chalk-dim: #b9ae99;
-  --win: #57b571;
-  --lose: #c1495a;
-  --tie: #cda545;
-  --line: rgba(205, 165, 69, 0.28);
+  /* --- color tokens (bright/pop palette) --- */
+  --wood: #0B0A14;
+  --wood-2: #1A1030;
+  --felt: #0F6B45;
+  --felt-2: #0B5636;
+  --brass: #FFC933;
+  --brass-dim: #E0A100;
+  --chalk: #FFFFFF;
+  --chalk-dim: #C9D2EE;
+  --win: #2BEF9A;
+  --win-rgb: 43, 239, 154;
+  --lose: #FF4D6D;
+  --tie: #FFC933;
+  --line: rgba(255, 201, 51, 0.32);
 
   /* --- type --- */
   --font-display: 'Big Shoulders Display', sans-serif;
@@ -52,8 +53,8 @@ html, body {
   gap: clamp(8px, 1.1vh, 16px);
 
   background:
-    radial-gradient(circle at 14% 8%, rgba(205, 165, 69, 0.10), transparent 40%),
-    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(18, 52, 36, 0.55), transparent 70%),
+    radial-gradient(circle at 14% 8%, rgba(255, 201, 51, 0.14), transparent 40%),
+    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(15, 107, 69, 0.6), transparent 70%),
     linear-gradient(180deg, var(--wood) 0%, var(--wood-2) 100%);
 }
 
@@ -136,7 +137,7 @@ html, body {
 
 .status-dot.live {
   background: var(--win);
-  box-shadow: 0 0 0 0 rgba(87, 181, 113, 0.6);
+  box-shadow: 0 0 0 0 rgba(var(--win-rgb), 0.6);
   animation: pulse 2.4s ease-out infinite;
 }
 
@@ -145,9 +146,9 @@ html, body {
 }
 
 @keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(87, 181, 113, 0.55); }
-  70%  { box-shadow: 0 0 0 8px rgba(87, 181, 113, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(87, 181, 113, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(var(--win-rgb), 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(var(--win-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--win-rgb), 0); }
 }
 
 /* ==========================================================================
@@ -158,7 +159,7 @@ html, body {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: 1fr 1.3fr;
   gap: clamp(10px, 1.3vw, 22px);
 }
 
@@ -184,7 +185,7 @@ html, body {
    ========================================================================== */
 
 .matchups {
-  background: linear-gradient(180deg, rgba(18, 52, 36, 0.55), rgba(14, 42, 28, 0.35));
+  background: linear-gradient(180deg, rgba(15, 107, 69, 0.5), rgba(11, 86, 54, 0.32));
   border: 1px solid var(--line);
   border-left: 4px solid var(--brass);
   border-radius: 6px;
@@ -225,16 +226,16 @@ html, body {
 
 .team-token {
   flex: none;
-  width: clamp(26px, 3.4vh, 44px);
-  height: clamp(26px, 3.4vh, 44px);
+  width: clamp(36px, 5vh, 66px);
+  height: clamp(36px, 5vh, 66px);
   border-radius: 50%;
-  border: 2px solid var(--brass-dim);
+  border: 3px solid var(--brass-dim);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: clamp(11px, 1.5vh, 19px);
+  font-size: clamp(16px, 2.3vh, 30px);
   color: var(--brass);
   background: rgba(0, 0, 0, 0.25);
 }
@@ -356,22 +357,22 @@ html, body {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: clamp(8px, 1vh, 14px) clamp(8px, 1vw, 14px);
+  border-radius: 8px;
+  padding: clamp(12px, 1.6vh, 20px) clamp(12px, 1.4vw, 20px);
   background: rgba(0, 0, 0, 0.15);
 }
 
 .lb-head {
   display: grid;
-  grid-template-columns: clamp(20px, 2.4vw, 30px) 1fr clamp(34px, 4vw, 50px) clamp(34px, 4vw, 50px);
-  gap: 4px;
-  font-size: clamp(8px, 0.95vh, 12px);
+  grid-template-columns: clamp(26px, 4.5vh, 40px) 1fr clamp(50px, 8vh, 90px) clamp(50px, 8vh, 90px);
+  gap: 6px;
+  font-size: clamp(10px, 1.15vh, 15px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--brass-dim);
   border-bottom: 1px solid var(--line);
-  padding-bottom: 4px;
-  margin-bottom: 2px;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
   flex: none;
 }
 
@@ -391,16 +392,16 @@ html, body {
 
 .lb-row {
   display: grid;
-  grid-template-columns: clamp(20px, 2.4vw, 30px) 1fr clamp(34px, 4vw, 50px) clamp(34px, 4vw, 50px);
+  grid-template-columns: clamp(26px, 4.5vh, 40px) 1fr clamp(50px, 8vh, 90px) clamp(50px, 8vh, 90px);
   align-items: center;
-  gap: 4px;
-  padding: 2px 0;
+  gap: 6px;
+  padding: 4px 0;
 }
 
 .lb-rank {
   font-family: var(--font-mono);
   color: var(--brass);
-  font-size: clamp(10px, 1.25vh, 15px);
+  font-size: clamp(14px, 1.9vh, 24px);
   text-align: center;
 }
 
@@ -408,23 +409,28 @@ html, body {
   min-width: 0;
   display: flex;
   align-items: baseline;
-  gap: 5px;
-  font-weight: 600;
-  font-size: clamp(11px, 1.35vh, 16px);
+  gap: 6px;
+  font-weight: 700;
+  font-size: clamp(16px, 2.3vh, 32px);
+}
+
+.lb-name .player-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .lb-name .badges {
-  font-size: 0.85em;
+  font-size: 0.8em;
   flex: none;
+  white-space: nowrap;
 }
 
 .lb-avg, .lb-hs {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: clamp(11px, 1.35vh, 16px);
+  font-size: clamp(16px, 2.3vh, 32px);
   color: var(--chalk-dim);
   text-align: right;
 }
@@ -437,9 +443,9 @@ html, body {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: clamp(10px, 1.2vw, 18px);
-  height: clamp(28px, 4.6vh, 54px);
-  border-top: 2px solid var(--brass);
+  gap: clamp(12px, 1.4vw, 20px);
+  height: clamp(46px, 7.2vh, 84px);
+  border-top: 3px solid var(--brass);
   overflow: hidden;
 }
 
@@ -447,8 +453,8 @@ html, body {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 clamp(8px, 1vw, 16px);
+  gap: 8px;
+  padding: 0 clamp(12px, 1.3vw, 20px);
   height: 100%;
   background: var(--brass);
   color: var(--wood);
@@ -456,7 +462,7 @@ html, body {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: clamp(10px, 1.3vh, 16px);
+  font-size: clamp(14px, 1.9vh, 22px);
 }
 
 .ticker-viewport {
@@ -483,15 +489,16 @@ html, body {
 .ticker-item {
   display: inline-flex;
   align-items: center;
-  padding-right: clamp(30px, 4vw, 60px);
-  font-size: clamp(11px, 1.5vh, 19px);
+  padding-right: clamp(36px, 4.5vw, 70px);
+  font-size: clamp(18px, 2.8vh, 36px);
+  font-weight: 600;
   color: var(--chalk);
 }
 
 .ticker-item::before {
   content: '\2726';
   color: var(--brass);
-  margin-right: clamp(10px, 1.4vw, 20px);
+  margin-right: clamp(12px, 1.6vw, 24px);
 }
 
 @keyframes ticker-scroll {
@@ -509,9 +516,9 @@ html, body {
 }
 
 @keyframes flash-glow {
-  0%   { box-shadow: 0 0 0 3px rgba(87, 181, 113, 0.7); background: rgba(87, 181, 113, 0.28); transform: scale(1.14); }
+  0%   { box-shadow: 0 0 0 3px rgba(var(--win-rgb), 0.7); background: rgba(var(--win-rgb), 0.28); transform: scale(1.14); }
   30%  { transform: scale(1); }
-  100% { box-shadow: 0 0 0 0 rgba(87, 181, 113, 0); background: rgba(87, 181, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--win-rgb), 0); background: rgba(var(--win-rgb), 0); }
 }
 
 /* ==========================================================================
@@ -521,7 +528,7 @@ html, body {
 .fullscreen-toggle {
   position: absolute;
   right: clamp(10px, 1.4vw, 20px);
-  bottom: clamp(38px, 5.6vh, 66px);
+  bottom: clamp(56px, 8.5vh, 96px);
   width: 34px;
   height: 34px;
   border-radius: 50%;
