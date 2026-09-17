@@ -326,7 +326,7 @@ function renderMatches(matches) {
 
     li.innerHTML = `
       <div class="side side-a">
-        <span class="team-token">#${escapeHtml(m.teamANum)}</span>
+        <span class="team-token">${escapeHtml(m.teamANum)}</span>
         <div class="team-info">
           <p class="team-players">${escapeHtml(m.teamAPlayers.join(', '))}</p>
         </div>
@@ -337,7 +337,7 @@ function renderMatches(matches) {
         <span class="score-b">${m.scoreB}</span>
       </div>
       <div class="side side-b">
-        <span class="team-token">#${escapeHtml(m.teamBNum)}</span>
+        <span class="team-token">${escapeHtml(m.teamBNum)}</span>
         <div class="team-info">
           <p class="team-players">${escapeHtml(m.teamBPlayers.join(', '))}</p>
         </div>
