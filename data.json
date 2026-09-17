@@ -1,0 +1,329 @@
+{
+  "meta": {
+    "leagueName": "Thursday Night Dart League",
+    "updatedAt": "2026-09-16T19:00:00-04:00"
+  },
+  "matches": [
+    {
+      "teamANum": "9",
+      "teamAPlayers": [
+        "Justin V",
+        "Rachel J",
+        "Katie S"
+      ],
+      "scoreA": 0,
+      "teamBNum": "10",
+      "teamBPlayers": [
+        "Luc L",
+        "Lynn S",
+        "Maggie J"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "1",
+      "teamAPlayers": [
+        "Alain P",
+        "Mike H",
+        "Sherley D"
+      ],
+      "scoreA": 1,
+      "teamBNum": "3",
+      "teamBPlayers": [
+        "Ian B",
+        "Diana B",
+        "Heather L"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "8",
+      "teamAPlayers": [
+        "Shawn P",
+        "Andre G",
+        "Charmaine S"
+      ],
+      "scoreA": 0,
+      "teamBNum": "11",
+      "teamBPlayers": [
+        "Tom M",
+        "Bruce B",
+        "Val T"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "2",
+      "teamAPlayers": [
+        "Michael D",
+        "Terry W",
+        "Ter L"
+      ],
+      "scoreA": 0,
+      "teamBNum": "16",
+      "teamBPlayers": [
+        "Jeff S",
+        "Sarah F",
+        "Suzanne S"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "7",
+      "teamAPlayers": [
+        "Alain B",
+        "Kristine S",
+        "Steve D"
+      ],
+      "scoreA": 0,
+      "teamBNum": "12",
+      "teamBPlayers": [
+        "Mike G",
+        "Kim WB",
+        "Diane C"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "4",
+      "teamAPlayers": [
+        "Brent C",
+        "Susan D",
+        "Sherri C"
+      ],
+      "scoreA": 0,
+      "teamBNum": "15",
+      "teamBPlayers": [
+        "Allen G",
+        "Christina S",
+        "Andre R"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "6",
+      "teamAPlayers": [
+        "Rob G",
+        "Francine L",
+        "Harmonie B"
+      ],
+      "scoreA": 0,
+      "teamBNum": "13",
+      "teamBPlayers": [
+        "Dwayne S",
+        "Bogdan S",
+        "Monique P"
+      ],
+      "scoreB": 0
+    },
+    {
+      "teamANum": "5",
+      "teamAPlayers": [
+        "Ken M",
+        "Shannon P",
+        "Linda M"
+      ],
+      "scoreA": 1,
+      "teamBNum": "14",
+      "teamBPlayers": [
+        "Gaeten L",
+        "Marcy T",
+        "Kashifa S"
+      ],
+      "scoreB": 0
+    }
+  ],
+  "awards": [
+    {
+      "title": "MVP",
+      "gender": "men",
+      "name": "Alain Patry",
+      "rating": 34.5
+    },
+    {
+      "title": "MVP",
+      "gender": "women",
+      "name": "Diana Bussiere",
+      "rating": 40
+    },
+    {
+      "title": "SVP",
+      "gender": "men",
+      "name": "Ken McLean",
+      "rating": 19.9
+    },
+    {
+      "title": "SVP",
+      "gender": "women",
+      "name": "Linda Mattinson",
+      "rating": 22.2
+    }
+  ],
+  "menTop8": [
+    {
+      "rank": 1,
+      "name": "Alain Patry",
+      "badges": [
+        "🥇",
+        "🥇",
+        "💎"
+      ],
+      "avg": 130.5,
+      "hs": 180,
+      "hfin": null
+    },
+    {
+      "rank": 2,
+      "name": "Ken McLean",
+      "badges": [
+        "🥈",
+        "💯"
+      ],
+      "avg": 71,
+      "hs": 108,
+      "hfin": null
+    },
+    {
+      "rank": 3,
+      "name": "Mike Hood",
+      "badges": [
+        "🥇",
+        "🥇",
+        "🎯"
+      ],
+      "avg": 45,
+      "hs": 45,
+      "hfin": 95
+    },
+    {
+      "rank": 4,
+      "name": "Justin Vallieres",
+      "badges": [],
+      "avg": 41,
+      "hs": 41,
+      "hfin": null
+    },
+    {
+      "rank": 5,
+      "name": "Brent Caves",
+      "badges": [],
+      "avg": 20,
+      "hs": 20,
+      "hfin": null
+    },
+    {
+      "rank": 6,
+      "name": "Michael Doyle",
+      "badges": [],
+      "avg": null,
+      "hs": 0,
+      "hfin": null
+    },
+    {
+      "rank": 7,
+      "name": "Rob Gosse",
+      "badges": [],
+      "avg": null,
+      "hs": 0,
+      "hfin": null
+    },
+    {
+      "rank": 8,
+      "name": "Alain Bussiere",
+      "badges": [],
+      "avg": null,
+      "hs": 0,
+      "hfin": null
+    }
+  ],
+  "womenTop8": [
+    {
+      "rank": 1,
+      "name": "Diana Bussiere",
+      "badges": [
+        "🥇",
+        "🥇",
+        "💎"
+      ],
+      "avg": 180,
+      "hs": 180,
+      "hfin": null
+    },
+    {
+      "rank": 2,
+      "name": "Heather Leeks",
+      "badges": [
+        "🥈",
+        "🥈",
+        "💎"
+      ],
+      "avg": 180,
+      "hs": 180,
+      "hfin": null
+    },
+    {
+      "rank": 3,
+      "name": "Rachel Jeffries",
+      "badges": [
+        "💎"
+      ],
+      "avg": 140,
+      "hs": 140,
+      "hfin": null
+    },
+    {
+      "rank": 4,
+      "name": "Sherley Demers",
+      "badges": [
+        "💯"
+      ],
+      "avg": 100,
+      "hs": 100,
+      "hfin": null
+    },
+    {
+      "rank": 5,
+      "name": "Linda Mattinson",
+      "badges": [
+        "💯"
+      ],
+      "avg": 100,
+      "hs": 100,
+      "hfin": null
+    },
+    {
+      "rank": 6,
+      "name": "Katie Smith",
+      "badges": [],
+      "avg": 81,
+      "hs": 81,
+      "hfin": null
+    },
+    {
+      "rank": 7,
+      "name": "Susan Doyle",
+      "badges": [],
+      "avg": 50,
+      "hs": 50,
+      "hfin": null
+    },
+    {
+      "rank": 8,
+      "name": "Shannon Peters",
+      "badges": [
+        "🥇",
+        "🥇"
+      ],
+      "avg": 25,
+      "hs": 30,
+      "hfin": 38
+    }
+  ],
+  "news": [
+    "Happy Birthdays :  Terry W, and Shannon P",
+    "Sherley DEMERS is stacking up points with 100!",
+    "Rachel JEFFRIES is scoring triple 20s like it's a poutine festival with 140!",
+    "Katie SMITH is cruising with a score of 81!",
+    "Alain PATRY has recorded a strong 81!"
+  ]
+}
