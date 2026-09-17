@@ -268,10 +268,14 @@ function parseTop8(rows) {
 }
 
 function parseAwards(rows) {
+  // Scan every row in the fetched range for an MVP/SVP label rather than
+  // assuming a fixed row position — a row inserted or removed above these
+  // in the live sheet would otherwise silently drop or misread an award.
   const awards = [];
-  for (let r = 2; r <= 5 && r < rows.length; r++) {
+  for (let r = 0; r < rows.length; r++) {
     const [rawLabel, name, rating] = rows[r];
     if (!rawLabel || !name) continue;
+    if (!/MVP|SVP/i.test(rawLabel)) continue;
     const gender = /\u2640/.test(rawLabel) ? 'women' : 'men';
     const title = /SVP/i.test(rawLabel) ? 'SVP' : 'MVP';
     const ratingNum = parseFloat(rating);
@@ -380,7 +384,7 @@ function renderLeaderboard(listId, players) {
     li.innerHTML = `
       <span class="lb-rank">${p.rank}</span>
       <span class="lb-name${changed ? ' flash' : ''}">
-        <span>${escapeHtml(p.name)}</span>
+        <span class="player-name">${escapeHtml(p.name)}</span>
         ${badges ? `<span class="badges">${badges}</span>` : ''}
       </span>
       <span class="lb-avg">${formatNumber(p.avg)}</span>
