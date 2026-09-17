@@ -130,14 +130,18 @@ def parse_top8(wb, sheet_name):
 
 
 def parse_awards(wb):
+    # Scan the whole sheet for MVP/SVP labels rather than assuming a fixed
+    # row range — robust to rows being inserted/removed above them.
     ws = wb["SheetA"]
     awards = []
     label_map = {"MVP": "MVP", "SVP": "SVP"}
-    for r in range(3, 7):
+    for r in range(1, ws.max_row + 1):
         raw_label = ws.cell(row=r, column=1).value
         name = ws.cell(row=r, column=2).value
         rating = ws.cell(row=r, column=3).value
         if not (raw_label and name):
+            continue
+        if not re.search(r"MVP|SVP", str(raw_label), re.IGNORECASE):
             continue
         gender = "women" if "\u2640" in str(raw_label) else "men"
         title = "SVP" if "SVP" in str(raw_label).upper() else "MVP"
