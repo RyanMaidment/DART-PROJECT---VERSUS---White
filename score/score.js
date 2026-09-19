@@ -11,7 +11,7 @@ import {
   withRules, matchState, legState, starterFor, lineupFor, nextPlayer, lastThrower,
   classifyEntry, replaySide, fmtPoints,
 } from '../lib/engine.js';
-import { teamLabel, lineupChoices } from '../lib/night.js';
+import { teamLabel, lineupChoices, customTeamName, teamTitle } from '../lib/night.js';
 
 const $ = (sel) => document.querySelector(sel);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -123,8 +123,13 @@ function firstName(id) {
 }
 const shortOf = (id) => (P(id) ? (P(id).short || P(id).name) : '?');
 
+// "The Honey Badgers" if the team has a name, otherwise "Team 7"
+const tt = (teamNum) => teamTitle(S.config, teamNum);
+
+// What to show as the team's line on cards: its name if it has one, else the players' names
 function namesOf(m, side, n) {
-  return lineupFor(m, n, side).map(shortOf).join(', ');
+  const custom = customTeamName(S.config, side === 'A' ? m.teamA : m.teamB);
+  return custom || lineupFor(m, n, side).map(shortOf).join(', ');
 }
 
 let toastTimer = null;
@@ -224,12 +229,15 @@ function setupView(m) {
     const selects = [0, 1, 2].map((i) => `
       <label>Player ${i + 1}${i === 0 ? ' (throws first)' : ''}</label>
       <select class="sel" id="lu-${side}-${i}">${selectOptions(choices, lineup && lineup[i])}</select>`).join('');
-    return `<div class="setup-col ${side === 'A' ? 'a' : 'b'}"><h3>Team ${esc(tn)}</h3>${selects}</div>`;
+    return `<div class="setup-col ${side === 'A' ? 'a' : 'b'}"><h3>Team ${esc(tn)}</h3>
+      <label>Team name (optional)</label>
+      <input class="txt" id="tn-${side}" maxlength="30" placeholder="e.g. The Honey Badgers" value="${esc(customTeamName(S.config, tn))}">
+      ${selects}</div>`;
   }).join('');
 
   return topbar({
     left: '<button class="btn small ghost" data-act="back">‹ Matches</button>',
-    title: `Match ${matchNo(m)}<small>Team ${esc(m.teamA)} v Team ${esc(m.teamB)} · setup</small>`,
+    title: `Match ${matchNo(m)}<small>${esc(tt(m.teamA))} v ${esc(tt(m.teamB))} · setup</small>`,
     right: syncHtml(),
   }) + `
     <div class="setup">
@@ -238,8 +246,8 @@ function setupView(m) {
       <div class="starter">
         <b>Who throws first in leg 1?</b>
         <div class="seg" id="first-starter">
-          <button class="on" data-act="pick-starter" data-side="A">Team ${esc(m.teamA)}</button>
-          <button data-act="pick-starter" data-side="B">Team ${esc(m.teamB)}</button>
+          <button class="on" data-act="pick-starter" data-side="A">${esc(tt(m.teamA))}</button>
+          <button data-act="pick-starter" data-side="B">${esc(tt(m.teamB))}</button>
         </div>
       </div>
       <p style="color:var(--chalk-dim);margin:0 0 14px">Legs then alternate. Use a <b>Dummy</b> if someone hasn't arrived yet — you can swap them in later without losing anything.</p>
@@ -265,7 +273,7 @@ function matchView(m) {
 
   const bar = topbar({
     left: '<button class="btn small ghost" data-act="back">‹ Matches</button>',
-    title: `Match ${matchNo(m)}<small>Team ${esc(m.teamA)} v Team ${esc(m.teamB)}${S.night && S.night.week ? ` · Week ${esc(S.night.week)}` : ''}</small>`,
+    title: `Match ${matchNo(m)}<small>${esc(tt(m.teamA))} v ${esc(tt(m.teamB))}${S.night && S.night.week ? ` · Week ${esc(S.night.week)}` : ''}</small>`,
     mid: `<div class="legbar">${legChips}</div>`,
     right: syncHtml(),
   });
@@ -318,7 +326,7 @@ function teamPanel(m, side, n, leg, st, ms, R) {
     <section class="team ${side === 'B' ? 'b' : ''} ${active ? 'active' : ''} panel-${side.toLowerCase()}">
       <div class="team-head">
         <span class="tok">${esc(tn)}</span>
-        <div class="names">${esc(lineup.map(shortOf).join(', '))}</div>
+        <div class="names${customTeamName(S.config, tn) ? ' custom' : ''}">${esc(customTeamName(S.config, tn) || lineup.map(shortOf).join(', '))}</div>
         <div class="mpts">${fmtPoints(pts)}<small>MATCH PTS</small></div>
       </div>
       <div class="remaining">
@@ -346,7 +354,7 @@ function padPanel(m, n, leg, st, ms, R) {
       const parts = [];
       if (st.winner === side) parts.push('finish');
       if (st.under100First === side) parts.push(`under ${R.underThreshold}`);
-      return `<div>Team ${esc(side === 'A' ? m.teamA : m.teamB)}<b>+${fmtPoints(p)}</b>${parts.join(' + ') || '—'}</div>`;
+      return `<div>${esc(tt(side === 'A' ? m.teamA : m.teamB))}<b>+${fmtPoints(p)}</b>${parts.join(' + ') || '—'}</div>`;
     };
     const winnerTeam = st.winner === 'A' ? m.teamA : m.teamB;
     let action;
@@ -362,7 +370,7 @@ function padPanel(m, n, leg, st, ms, R) {
       : '';
     return `<section class="pad">
       <div class="result-card">
-        <h3>Leg ${n} — Team ${esc(winnerTeam)} wins</h3>
+        <h3>Leg ${n} — ${esc(tt(winnerTeam))} wins</h3>
         <div class="split">${label('A')}${label('B')}</div>
         ${matchLine}
         ${action}
@@ -380,14 +388,14 @@ function padPanel(m, n, leg, st, ms, R) {
   const starterRow = noTurns ? `
     <div class="starter-row">Leg ${n} starts:
       <div class="seg">
-        <button class="${starter === 'A' ? 'on' : ''}" data-act="set-starter" data-side="A">Team ${esc(m.teamA)}</button>
-        <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">Team ${esc(m.teamB)}</button>
+        <button class="${starter === 'A' ? 'on' : ''}" data-act="set-starter" data-side="A">${esc(tt(m.teamA))}</button>
+        <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">${esc(tt(m.teamB))}</button>
       </div></div>` : '';
 
   return `<section class="pad">
     <div class="pchips phone-only">${t.lineup.map((id) => `<button class="pchip ${id === t.pid ? 'sel' : ''}" data-act="pick" data-p="${esc(id)}">${esc(shortOf(id))}</button>`).join('')}</div>
     <div class="entry-box">
-      <div class="who">Team ${esc(tn)} · <b>${esc(shortOf(t.pid))}</b> to throw · ${rem} left</div>
+      <div class="who">${esc(tt(tn))} · <b>${esc(shortOf(t.pid))}</b> to throw · ${rem} left</div>
       <div class="val ${S.entry === '' ? 'empty' : ''}" id="entry-val">${S.entry === '' ? '0' : esc(S.entry)}</div>
     </div>
     <div class="quick">${QUICK_SCORES.map((q) => `<button data-act="quick" data-v="${q}">${q}</button>`).join('')}</div>
@@ -456,7 +464,7 @@ async function enterScore() {
   if (c.kind === 'finish') {
     const ok = await confirmModal({
       title: 'Finished the leg?',
-      text: `Team ${thrower.side === 'A' ? m.teamA : m.teamB} — ${firstName(thrower.pid)} checks out on ${s}. Was it a double?`,
+      text: `${tt(thrower.side === 'A' ? m.teamA : m.teamB)} — ${firstName(thrower.pid)} checks out on ${s}. Was it a double?`,
       yes: `Yes, finished on ${s}`, no: 'No — fix score',
     });
     if (!ok) return;
@@ -548,7 +556,7 @@ function openTurns() {
       return `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}"><span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b></button>`;
     }).join('') || '<span style="color:var(--chalk-dim);font-size:13px">No turns yet</span>';
     return `<div class="sheet-col ${side === 'B' ? 'b' : ''}">
-      <h4>Team ${esc(tn)} · ${st[side].remaining} left</h4>
+      <h4>${esc(tt(tn))} · ${st[side].remaining} left</h4>
       <div class="sheet-turns">${chips}</div>
       <button class="btn small" data-act="subs" data-side="${side}">Change players</button>
     </div>`;
@@ -572,7 +580,7 @@ function openEdit(side, i) {
   const choices = lineupChoices(S.players, tn);
   showModal(`
     <h3>Edit turn</h3>
-    <p>Leg ${n} · Team ${esc(tn)} · turn ${i + 1}</p>
+    <p>Leg ${n} · ${esc(tt(tn))} · turn ${i + 1}</p>
     <label>Score</label>
     <input id="edit-score" class="txt" inputmode="numeric" maxlength="3" value="${turn.s}">
     <label>Thrown by</label>
@@ -644,7 +652,7 @@ function openSubs(side) {
     <label>Player ${i + 1}</label>
     <select class="sel" id="sub-${i}">${selectOptions(choices, lineup[i])}</select>`).join('');
   showModal(`
-    <h3>Change players — Team ${esc(tn)}</h3>
+    <h3>Change players — ${esc(tt(tn))}</h3>
     <p>Applies from leg ${n} onward. Earlier legs keep who actually threw.</p>
     ${selects}
     <div class="error-text" id="sub-err"></div>
@@ -673,6 +681,44 @@ async function saveSubs(side) {
   }
 }
 
+function openTeamNames() {
+  const ctx = entryContext();
+  if (!ctx) return;
+  const { m } = ctx;
+  const field = (side) => {
+    const tn = side === 'A' ? m.teamA : m.teamB;
+    return `<label>Team ${esc(tn)}</label>
+      <input class="txt" id="tnm-${side}" maxlength="30" placeholder="Leave blank to show the players' names" value="${esc(customTeamName(S.config, tn))}">`;
+  };
+  showModal(`
+    <h3>Team names</h3>
+    <p>Optional. A team name shows instead of the players' names on the TV and here.</p>
+    ${field('A')}${field('B')}
+    <div class="row">
+      <button class="btn" data-mact="no">Cancel</button>
+      <button class="btn good" data-mact="names-save">Save</button>
+    </div>`);
+}
+
+async function saveTeamNamesModal() {
+  const ctx = entryContext();
+  if (!ctx) return;
+  const { m } = ctx;
+  const patch = {};
+  for (const side of ['A', 'B']) {
+    const tn = side === 'A' ? m.teamA : m.teamB;
+    const v = ($(`#tnm-${side}`).value || '').trim();
+    if (v !== customTeamName(S.config, tn)) patch[tn] = v;
+  }
+  try {
+    if (Object.keys(patch).length) await S.store.saveTeamNames(patch);
+    closeModal(true);
+    toast('Team names saved', 'good');
+  } catch (err) {
+    toast('Could not save — check the connection', 'error');
+  }
+}
+
 function openMore() {
   const ctx = entryContext();
   if (!ctx) return;
@@ -681,14 +727,15 @@ function openMore() {
   const starterBlock = (!st.over && st.A.shots + st.B.shots === 0) ? `
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>Leg ${n} starts:</b>
         <div class="seg">
-          <button class="${starter === 'A' ? 'on' : ''}" data-act="set-starter" data-side="A">Team ${esc(m.teamA)}</button>
-          <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">Team ${esc(m.teamB)}</button>
+          <button class="${starter === 'A' ? 'on' : ''}" data-act="set-starter" data-side="A">${esc(tt(m.teamA))}</button>
+          <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">${esc(tt(m.teamB))}</button>
         </div></div>` : '';
   showModal(`
     <h3>More</h3>
-    <p>Match ${matchNo(m)} · Team ${esc(m.teamA)} v Team ${esc(m.teamB)}</p>
+    <p>Match ${matchNo(m)} · ${esc(tt(m.teamA))} v ${esc(tt(m.teamB))}</p>
     <div style="display:grid;gap:10px">
       ${starterBlock}
+      <button class="btn" data-mact="team-names">Team names…</button>
       ${m.status === 'final' ? '' : '<button class="btn primary" data-mact="end-match">End match now (mark final)</button>'}
       ${m.status === 'final' ? '<button class="btn" data-mact="reopen">Re-open match</button>' : ''}
       <button class="btn danger" data-mact="clear-match">Clear ALL scores for this match</button>
@@ -759,6 +806,14 @@ async function startMatch() {
   if (bad(a) || bad(b)) { toast('Pick three players for each team (use Dummy if someone is missing)', 'error'); return; }
   const dup = (ids) => { const named = ids.filter((id) => !(P(id) && P(id).dummy)); return new Set(named).size !== named.length; };
   if (dup(a) || dup(b)) { toast('The same player is picked twice', 'error'); return; }
+  // save any team names typed on the setup screen
+  const names = {};
+  for (const side of ['A', 'B']) {
+    const tn = side === 'A' ? m.teamA : m.teamB;
+    const v = (($(`#tn-${side}`) || {}).value || '').trim();
+    if (v !== customTeamName(S.config, tn)) names[tn] = v;
+  }
+  if (Object.keys(names).length) S.store.saveTeamNames(names).catch(() => toast('Could not save team names', 'error'));
   const firstBtn = document.querySelector('#first-starter button.on');
   const first = firstBtn && firstBtn.dataset.side === 'B' ? 'B' : 'A';
   try {
@@ -781,6 +836,8 @@ async function handleModalAction(el) {
       return deleteEditedTurn(save.dataset.side, parseInt(save.dataset.i, 10));
     }
     case 'subs-save': return saveSubs(el.dataset.side);
+    case 'team-names': return openTeamNames();
+    case 'names-save': return saveTeamNamesModal();
     case 'end-match':
       if (ctx) { await S.store.setMatchFields(S.nightId, ctx.m.id, { status: 'final' }); closeModal(true); go('#/'); }
       return;

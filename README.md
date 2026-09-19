@@ -62,6 +62,13 @@ There are **no logins or PINs** anywhere — no Firebase Authentication to set u
 2. **Nights & matchups →** pick the date, week number and the 8 pairings → **Create / update night**.
    That puts the matchups on the TV and on the tablets.
 
+## Team names (optional)
+
+Every team keeps its number. A team can also have a name such as "The Honey Badgers", which then shows instead of the
+players' names on the TV board, the scorer and the CSV export (leave it blank to keep showing the players).
+Set it on the scorer's **match-setup screen**, from **More… → Team names** during a match, or in **Admin → Team names**
+(where you can see and change all 16 at once). Names are saved with the league settings, so no new Firebase setup is needed.
+
 ## League night routine
 
 * **Before play:** Admin → create the night (once). Open the board on the TV (press **F** for full screen).
@@ -69,6 +76,8 @@ There are **no logins or PINs** anywhere — no Firebase Authentication to set u
   tap the match, pick who is playing and who throws first, **Start**. Type each turn's score and press **Enter ✓**.
   A checkout asks "Was it a double?" once. Tap any past turn to correct it; **Undo last turn** is one tap.
   Late player? Use **Change players** (pick *Dummy* until they arrive) — it applies from the current leg on.
+  The scorer also works on **phones** (portrait or sideways): both scores and the keypad fit on one screen, and the
+  **Turns** button opens every turn for editing and "Change players".
 * **After play:** each scorer taps **Finish match**. Admin → Stats & export → **Save this night's stats**.
 
 ## How points and stats are calculated

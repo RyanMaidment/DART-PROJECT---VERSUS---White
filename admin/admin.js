@@ -7,7 +7,7 @@
 
 import { createStore } from '../lib/store.js';
 import { withRules, DEFAULT_RULES, shortName, slug, fmtPoints, matchResults, pointsPerMatch } from '../lib/engine.js';
-import { teamNumbers, teamLabel, todayISO } from '../lib/night.js';
+import { teamNumbers, teamLabel, customTeamName, todayISO } from '../lib/night.js';
 import { weeklyRows, toCsv } from '../lib/export.js';
 import { SEED_PLAYERS } from '../lib/seed-data.js';
 
@@ -75,10 +75,10 @@ function render(force = false) {
         <a class="btn small" href="../board/${S.kind === 'demo' ? '?demo' : ''}" target="_blank">TV board</a>
       </header>
       <nav class="tabs">
-        ${[['tonight', 'Nights & matchups'], ['roster', 'Roster'], ['stats', 'Stats & export'], ['settings', 'Settings']]
+        ${[['tonight', 'Nights & matchups'], ['roster', 'Roster'], ['teams', 'Team names'], ['stats', 'Stats & export'], ['settings', 'Settings']]
           .map(([id, label]) => `<button class="${S.tab === id ? 'on' : ''}" data-act="tab" data-tab="${id}">${label}</button>`).join('')}
       </nav>
-      <div id="panel">${S.tab === 'tonight' ? tonightTab() : S.tab === 'roster' ? rosterTab() : S.tab === 'stats' ? statsTab() : settingsTab()}</div>
+      <div id="panel">${S.tab === 'tonight' ? tonightTab() : S.tab === 'roster' ? rosterTab() : S.tab === 'teams' ? teamsTab() : S.tab === 'stats' ? statsTab() : settingsTab()}</div>
     </div>`;
 }
 
@@ -92,6 +92,13 @@ function toast(msg, type = '') {
   t.textContent = msg; t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = ''; }, 2800);
+}
+
+/* Team label for lists: "The Honey Badgers (Alain P, Mike H, Sherley D)" or just the players */
+function teamText(n) {
+  const custom = customTeamName(S.config, n);
+  const names = teamLabel(S.players, n);
+  return custom ? `${custom} (${names})` : names;
 }
 
 /* ============================================================ tab: nights == */
@@ -122,7 +129,7 @@ function initForms() {
 function tonightTab() {
   const teams = teamNumbers(S.players);
   const opts = (sel) => '<option value="">— team —</option>' + teams.map((n) =>
-    `<option value="${n}"${String(sel) === String(n) ? ' selected' : ''}>${n} · ${esc(teamLabel(S.players, n))}</option>`).join('');
+    `<option value="${n}"${String(sel) === String(n) ? ' selected' : ''}>${n} · ${esc(teamText(n))}</option>`).join('');
   const f = S.form;
   const pairs = f.pairs.map((p, i) => `
     <div class="pair">
@@ -296,6 +303,42 @@ async function loadSeed() {
   toast('Starter roster loaded', 'good');
 }
 
+/* ========================================================== tab: team names == */
+
+function teamsTab() {
+  const rows = teamNumbers(S.players).map((n) => `
+    <tr>
+      <td class="num">${n}</td>
+      <td>${esc(teamLabel(S.players, n))}</td>
+      <td><input type="text" data-team="${n}" maxlength="30" value="${esc(customTeamName(S.config, n))}" placeholder="(no team name — show players)"></td>
+    </tr>`).join('');
+  return `
+    <div class="card">
+      <h2>Team names</h2>
+      <p class="hint">Every team keeps its number. A team name is optional: when one is set it shows instead of the players' names
+        on the TV board, the scorer and the exports. Leave a box empty to go back to showing the players' names.
+        Teams can also set their own name on the scorer's match-setup screen, or from <b>More… → Team names</b>.</p>
+      <div class="table-scroll" style="max-height:none"><table>
+        <thead><tr><th class="num">Team</th><th>Players</th><th style="width:45%">Team name</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div style="margin-top:12px"><button class="btn primary" data-act="save-team-names">Save team names</button></div>
+    </div>`;
+}
+
+async function saveTeamNames() {
+  const map = {};
+  document.querySelectorAll('input[data-team]').forEach((el) => {
+    const n = el.dataset.team;
+    const v = el.value.trim();
+    if (v !== customTeamName(S.config, n)) map[n] = v;
+  });
+  if (!Object.keys(map).length) { toast('No changes to save'); return; }
+  await S.store.saveTeamNames(map);
+  toast('Team names saved', 'good');
+  render(true);
+}
+
 /* ============================================================= tab: stats == */
 
 function watchStatsNight(id) {
@@ -320,7 +363,7 @@ function statsTab() {
   let saved = null;
   if (night && S.statsMatches) {
     saved = S.weekly.find((w) => w.id === night.id);
-    const rows = weeklyRows({ night, matches: S.statsMatches, players: S.players, rules: R });
+    const rows = weeklyRows({ night, matches: S.statsMatches, players: S.players, rules: R, teamNames: S.config.teamNames });
     const results = matchResults([...S.statsMatches].sort((a, b) => parseInt(a.id.slice(1)) - parseInt(b.id.slice(1))), R);
     preview = `
       <div class="cols2">
@@ -368,8 +411,8 @@ function statsTab() {
     </div>
     <div class="card">
       <h2>Season standings (saved weeks)</h2>
-      ${standings.length ? `<table><thead><tr><th class="num">Rank</th><th class="num">Team</th><th>Players</th><th class="num">Nights</th><th class="num">Points</th><th class="num">Out of</th></tr></thead><tbody>
-        ${standings.map(([t, v], i) => `<tr><td class="num">${i + 1}</td><td class="num">${t}</td><td>${esc(teamLabel(S.players, t))}</td><td class="num">${v.nights}</td><td class="num">${fmtPoints(v.win)}</td><td class="num">${fmtPoints(v.total)}</td></tr>`).join('')}
+      ${standings.length ? `<table><thead><tr><th class="num">Rank</th><th class="num">Team</th><th>Team / players</th><th class="num">Nights</th><th class="num">Points</th><th class="num">Out of</th></tr></thead><tbody>
+        ${standings.map(([t, v], i) => `<tr><td class="num">${i + 1}</td><td class="num">${t}</td><td>${esc(teamText(t))}</td><td class="num">${v.nights}</td><td class="num">${fmtPoints(v.win)}</td><td class="num">${fmtPoints(v.total)}</td></tr>`).join('')}
       </tbody></table>` : '<p class="hint">Standings appear after you save your first night.</p>'}
     </div>`;
 }
@@ -494,7 +537,7 @@ document.addEventListener('click', async (e) => {
       }
       case 'csv-night': {
         const night = S.nights.find((n) => n.id === S.statsNight);
-        const rows = weeklyRows({ night, matches: S.statsMatches || [], players: S.players, rules: withRules(S.config.rules) });
+        const rows = weeklyRows({ night, matches: S.statsMatches || [], players: S.players, rules: withRules(S.config.rules), teamNames: S.config.teamNames });
         return download(`stats-${night.date}.csv`, toCsv(rows));
       }
       case 'csv-season': {
@@ -502,6 +545,7 @@ document.addEventListener('click', async (e) => {
         return download(`all-weeks-${todayISO()}.csv`, toCsv(rows));
       }
       case 'save-settings': return saveSettings();
+      case 'save-team-names': return saveTeamNames();
       case 'reset-demo':
         if (window.confirm('Erase all demo data in this browser and start over?')) {
           await S.store.resetDemo(); S.form = null; S.draft = null; toast('Demo data reset');

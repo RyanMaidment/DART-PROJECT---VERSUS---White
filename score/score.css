@@ -477,3 +477,12 @@ dialog#modal label { display: block; font-size: 12px; letter-spacing: 0.08em; te
   .pad-actions .btn { min-height: 36px; font-size: 13px; }
   .tags { min-height: 16px; }
 }
+
+
+/* a custom team name may take two lines on phones (player-name lists stay one line on short screens) */
+@media (max-width: 600px), (max-height: 500px) {
+  .team-head .names.custom { -webkit-line-clamp: 2; font-size: 13px; }
+}
+@media (max-height: 500px) and (min-width: 601px) {
+  .team-head .names.custom { display: -webkit-box; }   /* landscape phones hide player lists, but show a team name */
+}
