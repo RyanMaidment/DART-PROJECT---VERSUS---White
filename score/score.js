@@ -35,7 +35,6 @@ const S = {
   override: null,      // player picked for the next turn (otherwise: next in rotation)
   pending: false,      // writes waiting to sync
   online: navigator.onLine,
-  loginError: '',
 };
 
 let dataStarted = false;
@@ -60,11 +59,10 @@ async function boot() {
   window.addEventListener('online', () => { S.online = true; render(); });
   window.addEventListener('offline', () => { S.online = false; render(); });
 
-  S.store.onAuth((a) => {
-    S.auth = { ...a, ready: true };
-    if (a.signedIn) startData();
-    render();
-  });
+  // No sign-in needed on the scorer: the database rules let anyone update scores.
+  S.auth = { ready: true, signedIn: true, role: null };
+  startData();
+  render();
 }
 
 function startData() {
@@ -143,7 +141,6 @@ function toast(msg, type = '') {
 function render() {
   const app = $('#app');
   if (!S.auth.ready) { app.innerHTML = '<div class="center-msg">Loading…</div>'; return; }
-  if (!S.auth.signedIn) { app.innerHTML = loginView(); return; }
   if (!S.config || !S.players || (S.nightId && !S.matches)) { app.innerHTML = topbar({ title: 'Dart League' }) + '<div class="center-msg">Loading…</div>'; return; }
 
   if (S.route.name === 'match') {
@@ -167,36 +164,6 @@ function syncHtml() {
   return `${S.kind === 'demo' ? '<span class="demo-flag">DEMO</span>' : ''}<span class="sync ${cls}"><i></i>${text}</span>`;
 }
 
-/* ----------------------------------------------------------------- login -- */
-
-function loginView() {
-  return `
-    <div class="login-card">
-      <h2>League Scorer</h2>
-      <p>Enter the scorer PIN to start scoring.</p>
-      <input id="pin" class="pin-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" />
-      <div class="error-text" id="login-err">${esc(S.loginError)}</div>
-      <button class="btn primary" style="width:100%" data-act="login">Sign in</button>
-    </div>`;
-}
-
-async function doLogin() {
-  const pin = ($('#pin') || {}).value || '';
-  if (!pin) return;
-  try {
-    await S.store.signIn('scorer', pin);
-    S.loginError = '';
-  } catch (e1) {
-    try {
-      await S.store.signIn('admin', pin);
-      S.loginError = '';
-    } catch (e2) {
-      S.loginError = (e2 && e2.code === 'auth/network-request-failed') ? 'No internet connection.' : 'Wrong PIN — try again.';
-      render();
-    }
-  }
-}
-
 /* -------------------------------------------------------------- match list -- */
 
 function listView() {
@@ -204,11 +171,10 @@ function listView() {
   const dateTxt = S.night && S.night.date
     ? new Date(S.night.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
     : '';
-  const signOut = S.kind === 'firebase' ? '<button class="btn small ghost" data-act="signout">Sign out</button>' : '';
   const bar = topbar({
     title: esc((S.config && S.config.name) || 'Dart League'),
     sub: 'Scorer',
-    right: syncHtml() + signOut,
+    right: syncHtml(),
   });
 
   if (!S.nightId) {
@@ -685,14 +651,13 @@ function openMore() {
   const ctx = entryContext();
   if (!ctx) return;
   const { m } = ctx;
-  const isAdmin = S.auth.role === 'admin' || S.kind === 'demo';
   showModal(`
     <h3>More</h3>
     <p>Match ${matchNo(m)} · Team ${esc(m.teamA)} v Team ${esc(m.teamB)}</p>
     <div style="display:grid;gap:10px">
       ${m.status === 'final' ? '' : '<button class="btn primary" data-mact="end-match">End match now (mark final)</button>'}
       ${m.status === 'final' ? '<button class="btn" data-mact="reopen">Re-open match</button>' : ''}
-      ${isAdmin ? '<button class="btn danger" data-mact="clear-match">Clear ALL scores for this match</button>' : ''}
+      <button class="btn danger" data-mact="clear-match">Clear ALL scores for this match</button>
       <button class="btn" data-mact="no">Close</button>
     </div>`);
 }
@@ -709,8 +674,6 @@ document.addEventListener('click', async (e) => {
   const ctx = S.route.name === 'match' ? entryContext() : null;
 
   switch (act) {
-    case 'login': return doLogin();
-    case 'signout': await S.store.signOut(); return location.reload();
     case 'open': return go(`#/match/${el.dataset.id}`);
     case 'back': return go('#/');
     case 'leg': S.viewLeg = parseInt(el.dataset.n, 10); S.entry = ''; S.override = null; return render();
@@ -802,7 +765,6 @@ async function handleModalAction(el) {
 document.addEventListener('keydown', (e) => {
   if ($('#modal').open) return;
   if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) {
-    if (e.key === 'Enter' && e.target.id === 'pin') doLogin();
     return;
   }
   if (S.route.name !== 'match') return;

@@ -1,76 +1,111 @@
-# Thursday Night Dart League — TV Scoreboard
+# Thursday Night Dart League — scoring system
 
-A scoreboard site built to run full-screen on a TV: tonight's matchups,
-weekly MVP/SVP awards, the men's and women's top 8, and a scrolling news
-ticker — sized to fit one screen with no scrolling, and now **fully live**.
+Replaces the Google Sheets scoring workbook, the Apps Script "save" button and the
+sheet-polling TV board. Everything runs from your GitHub Pages site. Data lives in a
+free Firebase database. **Cost: $0** (no credit card needed for Firebase's free "Spark" plan).
 
-## How the "live" part works
+| Page | Who uses it | Address (after you publish) |
+|---|---|---|
+| **TV board (new)** | the TV in the bar | `https://YOU.github.io/REPO/board/` |
+| **Scorer** | one tablet per match | `https://YOU.github.io/REPO/score/` |
+| **Admin** | you, on a laptop | `https://YOU.github.io/REPO/admin/` |
 
-The board reads directly from your **Thursday Dart League Google Sheet**
-(the one that already displays stats from your scorekeeping sheet). It
-polls it every 7 seconds and only redraws the values that changed, with a
-short green flash — so the moment someone updates a score in the sheet,
-the TV reflects it. No exports, no git pushes, no server.
+## What changed vs. the spreadsheet
 
-A few things worth knowing:
+* The marker types **only the score for each turn**, in throw order (Team A, Team B, Team A …).
+  Remaining score, busts, finishes, **"under 100 first"**, leg points (1 + 0.5), match points out of 10.5,
+  and every player stat are worked out automatically. No checkboxes, no "Dummy" name tricks to maintain.
+* The TV board updates by itself within a second or two of each entry.
+* End of night: **Admin → Stats & export → Save this night's stats** (replaces the "save to stats spreadsheet" script).
+  **Download whole season (CSV)** gives you an "All Weeks" file with the same columns as before.
 
-- **This needs the sheet to stay shared as "Anyone with the link – Viewer."**
-  That's already the case today. If that's ever changed to "Restricted,"
-  the board will stop updating (it'll fall back to the last snapshot it
-  saw and show a "could not reach the sheet" status).
-- It reads these tabs: `Sheet1` (matchups), `SheetA` (MVP/SVP), `Sheet2`/
-  `Sheet3` (women's/men's rankings), `Team` (to number each roster), and
-  `Chat` (news ticker). If you rename a tab or rearrange its columns, the
-  matching `parse*` function in `script.js` needs a matching update.
-- It loads data via a JSONP `<script>` tag rather than `fetch()`, because
-  Google's sheet-reading endpoint doesn't reliably send the CORS headers
-  a normal cross-origin `fetch()` needs — a script tag sidesteps that
-  entirely. This is the same technique long-used by other "read a public
-  Google Sheet from a static site" tools.
-- If you'd rather not have the *live* spreadsheet directly reachable by
-  the public page (even read-only), say so and we can add a small proxy —
-  but that requires an actual server/function somewhere, which is exactly
-  what this approach avoids.
+## Step 1 — Put the files in your GitHub repo
 
-## Files
+Copy everything from this folder into your existing repo. **Nothing of yours gets overwritten:** the new TV board
+lives in its own `board/` folder and reuses your existing `styles.css`, so your current board keeps running
+at the site root while you test. Folder layout:
 
-| File               | Purpose                                                             |
-|--------------------|----------------------------------------------------------------------|
-| `index.html`       | Page structure                                                       |
-| `styles.css`       | All visual styling (colors, type and layout are CSS variables)       |
-| `script.js`        | Reads the live Google Sheet, renders the board, polls for changes    |
-| `data.json`        | A one-time snapshot, used **only** if the live sheet can't be reached on first load |
-| `xlsx_to_json.py`  | Optional: regenerates that fallback snapshot from an Excel export    |
+```
+(your existing files: index.html, styles.css, script.js, data.json …)   <- untouched
+board/   score/   admin/   lib/   firestore.rules   README.md            <- new
+```
 
-Score updates themselves need nothing from this list — just edit the
-Google Sheet as you already do.
+**Try it right now with no Firebase at all:** open `…/score/?demo`, `…/admin/?demo` and `…/board/?demo`.
+Demo mode stores data only in that browser (open the three pages in tabs of the same browser and they
+talk to each other). Nothing is shared with other devices until you finish Step 2.
 
-## Deploying (GitHub Pages / Netlify / Vercel)
+When you're happy with the new board, swap it in (e.g. move `board/index.html` and `board/script.js` over your
+root ones, fixing the `../` paths), or just point the TV at `/board/`. After that the Apps Script,
+`xlsx_to_json.py` and the Google Sheets polling are no longer needed.
 
-1. Put `index.html`, `styles.css`, `script.js`, and `data.json` in a git
-   repo, commit, and push.
-2. Turn on hosting for that repo:
-   - **GitHub Pages** — repo Settings → Pages → Deploy from branch → `main` / root.
-   - **Netlify** — "Add new site" → Import the repo → leave the build command blank, publish directory = repo root.
-   - **Vercel** — "Add New Project" → import the repo → framework preset "Other" → deploy.
-   No build step is needed for any of the three; it's plain HTML/CSS/JS.
-3. Open the URL it gives you and confirm the status dot goes green
-   ("Live — synced …"). If it instead shows "Could not reach the sheet,"
-   double check the sheet's share setting is still "Anyone with the link."
+> **Please check this first:** I could not re-open your original board files (`index.html`, `script.js`) while building this,
+> so the new board's markup is a reconstruction that relies on the class names in your `styles.css`. Open `/board/` next to your
+> current board. If any panel looks different, send me your original `index.html`, `styles.css` and `script.js` and I'll match it exactly.
 
-Once it's live, you never need to touch the repo again for a normal
-league night — only if you change the visual design or the sheet's
-structure.
+## Step 2 — Create the free Firebase project (about 10 minutes)
 
-## Customizing
+1. Go to <https://console.firebase.google.com> → **Add project** → name it → turn Google Analytics **off**.
+2. **Build → Firestore Database → Create database** → *Start in production mode* → choose a nearby location
+   (e.g. `northamerica-northeast1` Montréal). The location can't be changed later.
+3. Firestore → **Rules** tab → paste the contents of `firestore.rules` → **Publish**.
+4. **Project settings (gear) → Your apps → Web (`</>`)** → register an app → copy the `firebaseConfig`
+   values into `lib/config.js` (`apiKey`, `authDomain`, `projectId`, `appId`).
+   These only tell the pages which project to talk to; they are not passwords.
+5. Commit and push. Wait a minute for GitHub Pages to update.
 
-- **Colors, fonts, spacing** — CSS variables at the top of `styles.css`
-  (`--wood`, `--felt`, `--brass`, `--chalk`, etc.) plus `clamp()` values
-  throughout, so the whole board rescales together.
-- **Poll frequency** — `POLL_MS` near the top of `script.js` (default
-  7000ms). Faster feels more live; much faster risks Google rate-limiting
-  the endpoint.
-- **Which spreadsheet it reads** — `SPREADSHEET_ID` near the top of
-  `script.js`.
-- **How much of each tab it queries** — `SHEET_RANGES` in `script.js`;
-  widen these if you add more than 8 top-8 rows, more than ~13 matches, etc.
+There are **no logins or PINs** anywhere — no Firebase Authentication to set up.
+
+## Step 3 — First-time setup in Admin
+
+1. **Roster → Load starter roster from your spreadsheet.** Then fix anything that changed
+   (names, teams, **gender** — the red-edged rows have no gender set).
+2. **Nights & matchups →** pick the date, week number and the 8 pairings → **Create / update night**.
+   That puts the matchups on the TV and on the tablets.
+
+## League night routine
+
+* **Before play:** Admin → create the night (once). Open the board on the TV (press **F** for full screen).
+* **Each match:** open `/score/` on a tablet (Add to Home Screen for a full-screen app),
+  tap the match, pick who is playing and who throws first, **Start**. Type each turn's score and press **Enter ✓**.
+  A checkout asks "Was it a double?" once. Tap any past turn to correct it; **Undo last turn** is one tap.
+  Late player? Use **Change players** (pick *Dummy* until they arrive) — it applies from the current leg on.
+* **After play:** each scorer taps **Finish match**. Admin → Stats & export → **Save this night's stats**.
+
+## How points and stats are calculated
+
+* Leg: **1** point for finishing + **0.5** for being first under 100 (first to get *below* 100 remaining, decided by throw order —
+  the bonus can go to the team that loses the leg). 7 legs = 10.5 points a match. Legs alternate who throws first.
+* A finishing turn counts as a shot and its score counts as points. A bust or a miss is a shot scoring 0.
+* Average = points ÷ shots. **100+ counts from 100 for men and 95 for women.** 180/171 counts every 180 or 171.
+  Dummy is never included in anyone's stats.
+* All of this is in `lib/engine.js` (with tests in `tests/`). Rule numbers can be changed in Admin → Settings.
+
+## Who can change what (no logins)
+
+Nothing is password-protected. Anyone who has the address of a page can use it: the TV board, the scorer and the
+**Admin page** (which can edit the roster, matchups and settings, and delete data). The rules only stop anyone from
+creating data outside the league's own collections.
+
+Sensible habits for that:
+* Don't link to `/admin/` from anywhere. To make it harder to stumble on, rename the `admin` folder to something
+  only you know (e.g. `admin-x7k2`); nothing else depends on its name.
+* Download a backup now and then: **Admin → Stats & export → Download whole season (CSV)** after each night.
+* If anything is ever changed by mistake, scores can be fixed with **tap a turn → edit**, and the roster and matchups
+  can be re-entered in Admin. If this ever becomes a problem, tell me and I'll add a PIN back.
+
+## Free-plan limits (Firebase Spark)
+
+At the time of writing: 20,000 writes/day and 50,000 reads/day. A league night is roughly 1,200 writes
+and a few thousand reads, so you use a small fraction. Scoring keeps working through Wi-Fi drops: entries are stored on the
+tablet and sync automatically when it reconnects (the header shows *Saved / Saving… / Offline*).
+
+## Known limits
+
+* The app checks that a finish is arithmetically possible, but it can't see the board, so it asks the marker to confirm the double.
+* One tablet per match is the supported setup. (The data format would allow two, one per team, but there's no screen for it yet.)
+* Reloading a tablet while it has no internet needs the page to be cached by the browser; the scores already entered are safe either way.
+
+## Running the tests
+
+`node --test tests/engine.test.mjs` (Node 20+). Local preview: `python3 -m http.server` in this folder, then open
+`http://localhost:8000/score/?demo`.

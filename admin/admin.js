@@ -25,7 +25,6 @@ const S = {
   dirty: new Set(),           // roster rows with unsaved edits
   showSpares: false,
   msg: {},
-  loginError: '',
   pendingRender: false,
 };
 let started = false, unsubStats = null;
@@ -36,11 +35,9 @@ async function boot() {
   try { S.store = await createStore(); }
   catch (err) { $('#app').innerHTML = `<div class="center"><h2>Couldn't start</h2>${esc(err.message || err)}</div>`; return; }
   S.kind = S.store.kind;
-  S.store.onAuth((a) => {
-    S.auth = { ...a, ready: true };
-    if (a.signedIn && (a.role === 'admin' || S.kind === 'demo')) start();
-    render(true);
-  });
+  S.auth = { ready: true, signedIn: true, role: 'admin' };   // no login: the page is open
+  start();
+  render(true);
 }
 
 function start() {
@@ -62,7 +59,6 @@ const isTyping = () => {
 function render(force = false) {
   const app = $('#app');
   if (!S.auth.ready) { app.innerHTML = '<div class="center">Loading…</div>'; return; }
-  if (!S.auth.signedIn || (S.kind !== 'demo' && S.auth.role !== 'admin')) { app.innerHTML = loginView(); return; }
   if (!S.config || !S.players || !S.nights || !S.weekly) { app.innerHTML = '<div class="center">Loading…</div>'; return; }
 
   // Don't wipe what the admin is typing or has changed but not yet saved.
@@ -77,7 +73,6 @@ function render(force = false) {
         ${S.kind === 'demo' ? '<span class="flag">DEMO</span>' : ''}
         <a class="btn small" href="../score/${S.kind === 'demo' ? '?demo' : ''}">Scorer</a>
         <a class="btn small" href="../board/${S.kind === 'demo' ? '?demo' : ''}" target="_blank">TV board</a>
-        ${S.kind === 'firebase' ? '<button class="btn small" data-act="signout">Sign out</button>' : ''}
       </header>
       <nav class="tabs">
         ${[['tonight', 'Nights & matchups'], ['roster', 'Roster'], ['stats', 'Stats & export'], ['settings', 'Settings']]
@@ -97,16 +92,6 @@ function toast(msg, type = '') {
   t.textContent = msg; t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = ''; }, 2800);
-}
-
-function loginView() {
-  return `<div class="center">
-    <h2>League Admin</h2>
-    <p style="color:var(--chalk-dim)">Enter the admin PIN.</p>
-    <input id="pin" type="password" inputmode="numeric" style="width:100%;font-size:26px;text-align:center;letter-spacing:.3em" autocomplete="current-password">
-    <div class="msg err">${esc(S.loginError)}</div>
-    <button class="btn primary" style="width:100%" data-act="login">Sign in</button>
-  </div>`;
 }
 
 /* ============================================================ tab: nights == */
@@ -470,26 +455,12 @@ document.addEventListener('change', (e) => {
   }
 });
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'pin') doLogin(); });
-
-async function doLogin() {
-  const pin = ($('#pin') || {}).value || '';
-  if (!pin) return;
-  try { await S.store.signIn('admin', pin); S.loginError = ''; }
-  catch (err) {
-    S.loginError = (err && err.code === 'auth/network-request-failed') ? 'No internet connection.' : 'Wrong PIN — try again.';
-    render(true);
-  }
-}
-
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act;
   try {
     switch (act) {
-      case 'login': return doLogin();
-      case 'signout': await S.store.signOut(); return location.reload();
       case 'tab': S.tab = el.dataset.tab; S.dirty.clear(); return render(true);
       case 'create-night': return createNight();
       case 'load-night': {
