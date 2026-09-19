@@ -10,6 +10,7 @@ import { withRules, DEFAULT_RULES, shortName, slug, fmtPoints, matchResults, poi
 import { teamNumbers, teamLabel, customTeamName, todayISO } from '../lib/night.js';
 import { weeklyRows, toCsv } from '../lib/export.js';
 import { SEED_PLAYERS } from '../lib/seed-data.js';
+import { requestReport, reportDownloads, revokeDownloads } from '../lib/report.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -26,6 +27,7 @@ const S = {
   showSpares: false,
   msg: {},
   pendingRender: false,
+  report: { state: 'idle' },   // "Build report" button: idle | building | done | error
 };
 let started = false, unsubStats = null;
 
@@ -406,7 +408,9 @@ function statsTab() {
         <button class="btn good" data-act="save-weekly" ${night ? '' : 'disabled'}>Save this night's stats</button>
         <button class="btn" data-act="csv-night" ${night ? '' : 'disabled'}>Download this night (CSV)</button>
         <button class="btn" data-act="csv-season" ${S.weekly.length ? '' : 'disabled'}>Download whole season (CSV)</button>
+        <button class="btn" data-act="build-report" ${night && S.weekly.length && S.report.state !== 'building' ? '' : 'disabled'}>Build report (Excel + PDF)</button>
       </div>
+      ${reportPanel()}
       ${preview}
     </div>
     <div class="card">
@@ -424,6 +428,40 @@ function download(filename, text) {
   a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+/* Status of the "Build report" button. Kept in S.report (not in the DOM) so a re-render can't wipe the links. */
+function reportPanel() {
+  const r = S.report;
+  if (r.state === 'building') return '<p class="hint">Building the report… this takes about 30–60 seconds, and you can keep working.</p>';
+  if (r.state === 'error') return `<p class="hint"><b>Couldn't build the report:</b> ${esc(r.msg)}</p>`;
+  if (r.state !== 'done') return '';
+  const links = r.downloads.map((d) =>
+    `<a href="${esc(d.url)}"${d.name ? ` download="${esc(d.name)}"` : ''}${d.newTab ? ' target="_blank" rel="noopener"' : ''}>${esc(d.label)}</a>`).join(' · ');
+  return `<p class="hint"><b>Report ready:</b> ${links}${r.warnings.map((w) => `<br><b>Warning:</b> ${esc(w)}`).join('')}</p>`;
+}
+
+/* Builds the Excel + PDF report from the same two CSVs the download buttons produce. */
+async function buildReport() {
+  const night = S.nights.find((n) => n.id === S.statsNight);
+  if (!night || S.report.state === 'building') return;
+  if (!S.weekly.length) return toast("Save this night's stats first — the report needs season data", 'error');
+  if (!S.weekly.some((w) => w.id === night.id) && !window.confirm(
+    "This night isn't saved to season stats yet, so the Season page of the report won't include it.\n\nBuild the report anyway? (Cancel, then click \"Save this night's stats\" first.)")) return;
+
+  const nightRows = weeklyRows({ night, matches: S.statsMatches || [], players: S.players, rules: withRules(S.config.rules), teamNames: S.config.teamNames });
+  const seasonRows = S.weekly.flatMap((w) => w.rows || []);
+  revokeDownloads(S.report.downloads);
+  S.report = { state: 'building' };
+  render(true);
+  try {
+    const data = await requestReport(toCsv(nightRows), toCsv(seasonRows));
+    S.report = { state: 'done', downloads: reportDownloads(data), warnings: data.warnings || [] };
+  } catch (err) {
+    console.error(err);
+    S.report = { state: 'error', msg: err.message || String(err) };
+  }
+  render();
 }
 
 /* ========================================================== tab: settings == */
@@ -544,6 +582,7 @@ document.addEventListener('click', async (e) => {
         const rows = S.weekly.flatMap((w) => w.rows || []);
         return download(`all-weeks-${todayISO()}.csv`, toCsv(rows));
       }
+      case 'build-report': return buildReport();
       case 'save-settings': return saveSettings();
       case 'save-team-names': return saveTeamNames();
       case 'reset-demo':
