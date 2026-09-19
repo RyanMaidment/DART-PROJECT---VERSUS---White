@@ -69,6 +69,24 @@ players' names on the TV board, the scorer and the CSV export (leave it blank to
 Set it on the scorer's **match-setup screen**, from **More… → Team names** during a match, or in **Admin → Team names**
 (where you can see and change all 16 at once). Names are saved with the league settings, so no new Firebase setup is needed.
 
+## Two phones per match (each team scores its own team)
+
+By default one phone scores the whole match. If each team would rather use its own phone:
+
+1. Both teams open the match on their own phone (from the same match list).
+2. On the setup screen, each phone picks **"<its team> only"** next to *This device scores*, confirms its own three
+   players (and, if it likes, a team name), and taps **Ready**. Either team can set who throws first — the last choice counts.
+3. From then on each phone types **only its own team's throws**. The other team's remaining score and turns update live
+   (read-only). The player buttons, Undo, edit and "Change players" all apply to your own team only.
+4. Already started on one phone and want to switch? **More… → Scoring mode**.
+
+Things to know:
+* You can enter your throw as soon as you've thrown, even if the other team's marker hasn't yet — the phones don't have to wait for each other.
+* If the other team wins the leg while you're a throw behind, your phone asks you to enter your last throw(s) for that leg before it moves on.
+* The 0.5 "under 100 first" bonus is worked out from throw order, so it can be **provisional** until the slower team has entered its
+  turns (it may move to the other team once their throws are in). The final leg points are correct once both teams are up to date.
+* The choice of team is remembered on each phone for that match. Only one phone should score any one team.
+
 ## League night routine
 
 * **Before play:** Admin → create the night (once). Open the board on the TV (press **F** for full screen).
