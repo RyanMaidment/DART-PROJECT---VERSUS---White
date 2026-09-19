@@ -331,3 +331,149 @@ dialog#modal label { display: block; font-size: 12px; letter-spacing: 0.08em; te
   .match-card { grid-template-columns: 1fr; }
   .match-card .mt.b { flex-direction: row; text-align: left; }
 }
+
+
+/* ==========================================================================
+   Phones
+   - Portrait phone (<= 600px wide): both scores + keypad on ONE screen, no scrolling.
+     Turn history and "Change players" live in the Turns sheet.
+   - Landscape phone (short screens): three compact columns.
+   ========================================================================== */
+
+.phone-only { display: none; }
+
+/* Use the real visible height on mobile browsers (address bar showing/hiding) */
+@supports (height: 100dvh) {
+  html, body, #app { height: 100dvh; }
+}
+#app { padding-bottom: env(safe-area-inset-bottom); }
+.topbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+
+/* the Turns sheet (used on all sizes, but only reachable from the phone button) */
+.sheet-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sheet-col { border-top: 4px solid var(--side-a); background: var(--panel); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.sheet-col.b { border-top-color: var(--side-b); }
+.sheet-col h4 { margin: 0; font-family: var(--font-display); text-transform: uppercase; font-size: 16px; }
+.sheet-turns { display: flex; flex-wrap: wrap; gap: 6px; max-height: 42vh; overflow-y: auto; align-content: flex-start; }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .pchips.phone-only { display: flex; }
+  .btn.phone-only { display: block; }
+
+  /* these move into the Turns sheet / keypad column */
+  .team .pchips, .team .turns-label, .team .turns { display: none; }
+
+  .topbar { padding-top: 6px; padding-bottom: 6px; min-height: 48px; gap: 8px; }
+  .topbar .title { font-size: 18px; }
+  .topbar .title small { font-size: 10px; letter-spacing: 0.08em; }
+  .topbar .btn.small { min-height: 40px; padding: 6px 12px; }
+  .sync .sync-text { display: none; }
+  .demo-flag { font-size: 10px; padding: 2px 6px; }
+
+  /* toast at the top so it never covers the keypad */
+  #toast { top: 104px; bottom: auto; transform: translate(-50%, -20px); font-size: 15px; padding: 10px 16px; }
+  #toast.show { transform: translate(-50%, 0); }
+
+  .match-grid { gap: 8px; padding: 8px 10px 10px; overflow-y: auto; }
+  .team { padding: 8px 10px; gap: 4px; border-radius: 10px; border-top-width: 4px; }
+  .team-head { gap: 8px; }
+  .team-head .tok { width: 32px; height: 32px; font-size: 14px; border-width: 2px; }
+  .team-head .names {
+    font-size: 12px; line-height: 1.15;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .team-head .mpts { font-size: 22px; }
+  .team-head .mpts small { display: none; }
+  .remaining .lbl { display: none; }
+  .tags { min-height: 20px; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+  .tag { font-size: 10px; padding: 3px 7px; white-space: nowrap; }
+  .tag.throw, .tag.win { display: none; }          /* the result card below already says who won */
+
+  .pad { gap: 6px; }
+  .pchips.phone-only .pchip { min-height: 40px; font-size: 14px; padding: 2px 4px; }
+  .entry-box { padding: 4px 10px; border-radius: 10px; }
+  .entry-box .who { font-size: 12px; }
+  .entry-box .val { font-size: 38px; min-height: 44px; line-height: 1.15; }
+  .quick { gap: 5px; }
+  .quick button { min-height: 38px; font-size: 15px; }
+  .keys { grid-auto-rows: minmax(40px, 1fr); gap: 6px; min-height: 178px; flex: 1 0 auto; }
+  .keys button { min-height: 0; height: 100%; font-size: 24px; border-radius: 10px; }
+  .keys .enter { font-size: 18px; }
+  .pad-actions { gap: 6px; }
+  .pad-actions .btn { min-height: 44px; padding: 6px 4px; font-size: 14px; }
+  .pad-actions .long { display: none; }
+  .pad .starter-row { display: none; }           /* on phones this lives in More… */
+
+  .result-card { padding: 10px; gap: 8px; }
+  .result-card h3 { font-size: 22px; }
+  .result-card .split b { font-size: 22px; }
+
+  /* modal as a sheet from the bottom */
+  dialog#modal { width: 100vw; max-width: 100vw; margin: auto 0 0 0; border-radius: 16px 16px 0 0; border-width: 2px 0 0 0; padding: 14px; max-height: 88vh; }
+  dialog#modal h3 { font-size: 22px; }
+}
+
+/* Portrait phone */
+@media (max-width: 600px) {
+  .topbar { flex-wrap: wrap; }
+  .legbar { order: 10; width: 100%; gap: 5px; }
+  .legchip { flex: 1; min-width: 0; height: 38px; }
+
+  .match-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);   /* equal columns; never stretch to fit content */
+    grid-template-areas: "a b" "pad pad";
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow-x: hidden;
+  }
+  .team, .pad, .result-card { min-width: 0; }
+  .remaining .num { font-size: 52px; }
+  .sheet-cols { grid-template-columns: 1fr; }
+  .sheet-turns { max-height: 22vh; }
+
+  /* lists / setup */
+  .list-wrap, .setup { padding: 10px 10px 30px; }
+  .night-head { font-size: 17px; }
+  .match-card { padding: 10px 12px; gap: 6px; }
+  .match-card .mid { display: flex; align-items: center; justify-content: space-between; text-align: left; gap: 10px; }
+  .match-card .pts { font-size: 24px; }
+  .match-card .names { font-size: 17px; }
+  .tok { width: 38px; height: 38px; font-size: 16px; }
+  .setup h2 { font-size: 24px; }
+}
+
+/* short phones (e.g. iPhone SE): drop the quick-score row to keep the keys big */
+@media (max-width: 600px) and (max-height: 700px) {
+  .quick { display: none; }
+  .remaining .num { font-size: 44px; }
+  .entry-box .who { display: none; }               /* the highlighted player chip already says who's up */
+  .entry-box .val { min-height: 40px; font-size: 34px; }
+  .legchip { height: 30px; }
+  .topbar { min-height: 44px; }
+  .tags { min-height: 18px; }
+  .team-head .names { -webkit-line-clamp: 1; }
+  .team { padding: 6px 8px; }
+  .remaining .num { font-size: 40px; }
+  .pad { gap: 4px; }
+  .match-grid { gap: 6px; padding-top: 6px; padding-bottom: 6px; }
+}
+
+/* Landscape phone */
+@media (max-height: 500px) and (min-width: 601px) {
+  .topbar { min-height: 38px; padding-top: 3px; padding-bottom: 3px; }
+  .match-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 340px) minmax(0, 1fr);
+    grid-template-areas: "a pad b";
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .team-head .names { display: none; }
+  .remaining .num { font-size: 46px; }
+  .quick { display: none; }
+  .keys { grid-auto-rows: minmax(28px, 1fr); min-height: 120px; }
+  .entry-box .who { display: none; }
+  .entry-box .val { font-size: 28px; min-height: 32px; }
+  .pad { gap: 4px; }
+  .match-grid { padding-top: 6px; padding-bottom: 6px; }
+  .pchips.phone-only .pchip { min-height: 30px; font-size: 13px; }
+  .pad-actions .btn { min-height: 36px; font-size: 13px; }
+  .tags { min-height: 16px; }
+}
