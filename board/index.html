@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thursday Night Dart League — Live Board</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../styles.css">   <!-- your existing board stylesheet, unchanged -->
+<link rel="stylesheet" href="board-extra.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          <circle cx="50" cy="50" r="47" fill="var(--chalk)"/>
+          <circle cx="50" cy="50" r="47" fill="none" stroke="var(--wood)" stroke-width="3"/>
+          <circle cx="50" cy="50" r="36" fill="var(--lose)"/>
+          <circle cx="50" cy="50" r="24" fill="var(--chalk)"/>
+          <circle cx="50" cy="50" r="12" fill="var(--lose)"/>
+          <circle cx="50" cy="50" r="4" fill="var(--chalk)"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1 id="league-name">Thursday Night Dart League</h1>
+        <p class="tagline">Live Scoreboard</p>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="clock" id="clock">--:--</div>
+      <div class="status" id="status">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="board">
+
+    <section class="panel matchups" aria-labelledby="matchups-title">
+      <h2 id="matchups-title">Tonight&rsquo;s Matchups</h2>
+      <ol class="match-list" id="match-list"><!-- rendered by script.js --></ol>
+    </section>
+
+    <aside class="side-stack">
+
+      <section class="panel awards" aria-labelledby="awards-title">
+        <h2 id="awards-title">Top Players</h2>
+        <div class="award-row" id="award-row"><!-- rendered by script.js --></div>
+      </section>
+
+      <section class="panel leaderboards" aria-label="Top players">
+        <div class="leaderboard" id="men-board">
+          <h2>Men&rsquo;s Top 8</h2>
+          <div class="lb-head">
+            <span class="lb-rank"></span>
+            <span class="lb-name">Player</span>
+            <span class="lb-stat">Avg</span>
+            <span class="lb-stat">HS</span>
+          </div>
+          <ol class="lb-list" id="men-list"><!-- rendered by script.js --></ol>
+        </div>
+        <div class="leaderboard" id="women-board">
+          <h2>Women&rsquo;s Top 8</h2>
+          <div class="lb-head">
+            <span class="lb-rank"></span>
+            <span class="lb-name">Player</span>
+            <span class="lb-stat">Avg</span>
+            <span class="lb-stat">HS</span>
+          </div>
+          <ol class="lb-list" id="women-list"><!-- rendered by script.js --></ol>
+        </div>
+      </section>
+
+    </aside>
+
+  </main>
+
+  <footer class="ticker" aria-label="League news">
+    <div class="ticker-label">
+      <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path fill="currentColor" d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1zm13.5 1a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>
+      News
+    </div>
+    <div class="ticker-viewport">
+      <div class="ticker-track" id="ticker-track"><!-- rendered by script.js --></div>
+    </div>
+  </footer>
+
+  <button id="fullscreen-toggle" class="fullscreen-toggle" title="Toggle fullscreen (F)" aria-label="Toggle fullscreen">
+    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 9V4h5v2H6v3H4zm10-5h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 3v-3h2v5h-5v-2h3z"/></svg>
+  </button>
+
+</div>
+
+<!-- type="module": the board now reads live from the league database (lib/store.js) -->
+<script type="module" src="script.js"></script>
+</body>
+</html>

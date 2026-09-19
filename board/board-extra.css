@@ -1,0 +1,13 @@
+/* Small additions to styles.css for the database-driven board. Keep your existing styles.css as is. */
+
+.empty-note {
+  list-style: none;
+  text-align: center;
+  color: var(--chalk-dim);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: clamp(16px, 2.4vh, 30px);
+  padding: 4vh 0;
+}
