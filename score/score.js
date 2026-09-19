@@ -161,7 +161,7 @@ function topbar({ left = '', title = '', sub = '', mid = '', right = '' }) {
 function syncHtml() {
   const cls = !S.online ? 'off' : S.pending ? 'saving' : '';
   const text = !S.online ? 'Offline — saving on this device' : S.pending ? 'Saving…' : 'Saved';
-  return `${S.kind === 'demo' ? '<span class="demo-flag">DEMO</span>' : ''}<span class="sync ${cls}"><i></i>${text}</span>`;
+  return `${S.kind === 'demo' ? '<span class="demo-flag">DEMO</span>' : ''}<span class="sync ${cls}" title="${text}"><i></i><span class="sync-text">${text}</span></span>`;
 }
 
 /* -------------------------------------------------------------- match list -- */
@@ -335,8 +335,9 @@ function teamPanel(m, side, n, leg, st, ms, R) {
 
 function padPanel(m, n, leg, st, ms, R) {
   const canUndo = st.A.shots + st.B.shots > 0;
-  const undoBtn = `<button class="btn" data-act="undo" ${canUndo ? '' : 'disabled'}>↶ Undo last turn</button>`;
+  const undoBtn = `<button class="btn" data-act="undo" ${canUndo ? '' : 'disabled'}>↶ Undo<span class="long"> last turn</span></button>`;
   const moreBtn = '<button class="btn ghost" data-act="more">More…</button>';
+  const turnsBtn = '<button class="btn phone-only" data-act="turns">Turns</button>';
 
   /* Leg finished */
   if (st.over) {
@@ -366,7 +367,7 @@ function padPanel(m, n, leg, st, ms, R) {
         ${matchLine}
         ${action}
       </div>
-      <div class="pad-actions">${undoBtn}${moreBtn}</div>
+      <div class="pad-actions">${undoBtn}${turnsBtn}${moreBtn}</div>
     </section>`;
   }
 
@@ -384,6 +385,7 @@ function padPanel(m, n, leg, st, ms, R) {
       </div></div>` : '';
 
   return `<section class="pad">
+    <div class="pchips phone-only">${t.lineup.map((id) => `<button class="pchip ${id === t.pid ? 'sel' : ''}" data-act="pick" data-p="${esc(id)}">${esc(shortOf(id))}</button>`).join('')}</div>
     <div class="entry-box">
       <div class="who">Team ${esc(tn)} · <b>${esc(shortOf(t.pid))}</b> to throw · ${rem} left</div>
       <div class="val ${S.entry === '' ? 'empty' : ''}" id="entry-val">${S.entry === '' ? '0' : esc(S.entry)}</div>
@@ -396,7 +398,7 @@ function padPanel(m, n, leg, st, ms, R) {
       <button class="enter" data-act="enter">Enter ✓</button>
     </div>
     ${starterRow}
-    <div class="pad-actions">${undoBtn}${moreBtn}</div>
+    <div class="pad-actions">${undoBtn}${turnsBtn}${moreBtn}</div>
   </section>`;
 }
 
@@ -534,6 +536,30 @@ function confirmModal({ title, text, yes = 'Yes', no = 'Cancel', danger = false 
   });
 }
 
+function openTurns() {
+  const ctx = entryContext();
+  if (!ctx) return;
+  const { m, n, leg, st, R } = ctx;
+  const ton = (id) => R.tonThreshold[P(id) && P(id).gender === 'F' ? 'F' : 'M'];
+  const col = (side) => {
+    const tn = side === 'A' ? m.teamA : m.teamB;
+    const chips = st[side].turns.map((t, i) => {
+      const cls = [t.finish ? 'fin' : '', t.bust ? 'bust' : '', R.maxShots.includes(t.s) ? 'max' : (t.s >= ton(t.p) ? 'ton' : '')].join(' ');
+      return `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}"><span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b></button>`;
+    }).join('') || '<span style="color:var(--chalk-dim);font-size:13px">No turns yet</span>';
+    return `<div class="sheet-col ${side === 'B' ? 'b' : ''}">
+      <h4>Team ${esc(tn)} · ${st[side].remaining} left</h4>
+      <div class="sheet-turns">${chips}</div>
+      <button class="btn small" data-act="subs" data-side="${side}">Change players</button>
+    </div>`;
+  };
+  showModal(`
+    <h3>Leg ${n} — turns</h3>
+    <p>Tap a turn to correct it.</p>
+    <div class="sheet-cols">${col('A')}${col('B')}</div>
+    <div class="row"><button class="btn" data-mact="no">Close</button></div>`);
+}
+
 function openEdit(side, i) {
   const ctx = entryContext();
   if (!ctx) return;
@@ -650,11 +676,19 @@ async function saveSubs(side) {
 function openMore() {
   const ctx = entryContext();
   if (!ctx) return;
-  const { m } = ctx;
+  const { m, n, st } = ctx;
+  const starter = starterFor(m, n);
+  const starterBlock = (!st.over && st.A.shots + st.B.shots === 0) ? `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>Leg ${n} starts:</b>
+        <div class="seg">
+          <button class="${starter === 'A' ? 'on' : ''}" data-act="set-starter" data-side="A">Team ${esc(m.teamA)}</button>
+          <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">Team ${esc(m.teamB)}</button>
+        </div></div>` : '';
   showModal(`
     <h3>More</h3>
     <p>Match ${matchNo(m)} · Team ${esc(m.teamA)} v Team ${esc(m.teamB)}</p>
     <div style="display:grid;gap:10px">
+      ${starterBlock}
       ${m.status === 'final' ? '' : '<button class="btn primary" data-mact="end-match">End match now (mark final)</button>'}
       ${m.status === 'final' ? '<button class="btn" data-mact="reopen">Re-open match</button>' : ''}
       <button class="btn danger" data-mact="clear-match">Clear ALL scores for this match</button>
@@ -685,6 +719,7 @@ document.addEventListener('click', async (e) => {
     case 'edit': return openEdit(el.dataset.side, parseInt(el.dataset.i, 10));
     case 'subs': return openSubs(el.dataset.side);
     case 'more': return openMore();
+    case 'turns': return openTurns();
     case 'nextleg': {
       if (!ctx) return;
       const { ms, n, R } = ctx;
@@ -696,6 +731,7 @@ document.addEventListener('click', async (e) => {
       if (!ctx) return;
       await S.store.setLegFields(S.nightId, ctx.m.id, ctx.n, { starter: el.dataset.side });
       S.override = null;
+      if ($('#modal').open) closeModal(true);
       return;
     }
     case 'pick-starter': {
