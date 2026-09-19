@@ -9,7 +9,7 @@
 import { createStore } from '../lib/store.js';
 import {
   withRules, matchState, legState, starterFor, lineupFor, nextPlayer, lastThrower,
-  classifyEntry, replaySide, fmtPoints,
+  classifyEntry, replaySide, fmtPoints, legOwed,
 } from '../lib/engine.js';
 import { teamLabel, lineupChoices, customTeamName, teamTitle } from '../lib/night.js';
 
@@ -35,6 +35,8 @@ const S = {
   override: null,      // player picked for the next turn (otherwise: next in rotation)
   pending: false,      // writes waiting to sync
   online: navigator.onLine,
+  roles: {},           // which team this device scores, per match (this tab's memory)
+  draft: {},           // setup-screen choices not yet saved, so a live update can't wipe them
 };
 
 let dataStarted = false;
@@ -123,6 +125,47 @@ function firstName(id) {
 }
 const shortOf = (id) => (P(id) ? (P(id).short || P(id).name) : '?');
 
+/* ---- who is scoring on this device? -------------------------------------
+   'both' = one phone scores both teams (the original mode)
+   'A' / 'B' = this phone scores only that team; the other team has its own phone.
+   Remembered on the device (and in memory for this tab). */
+const roleKey = (m) => `dart-league:role:${S.nightId}:${m.id}`;
+function getRole(m) {
+  const k = roleKey(m);
+  if (S.roles[k]) return S.roles[k];
+  try { const v = localStorage.getItem(k); if (v === 'A' || v === 'B') return v; } catch (e) { /* private mode */ }
+  return 'both';
+}
+function setRole(m, role) {
+  const k = roleKey(m);
+  S.roles[k] = role;
+  try { localStorage.setItem(k, role); } catch (e) { /* private mode */ }
+}
+
+/* A team is "ready" once it has confirmed its lineup. Matches made before two-phone
+   scoring existed have no flag: they count as ready once started. */
+function sideReady(m, side) {
+  const fA = m.readyA, fB = m.readyB;
+  if (fA === undefined && fB === undefined) return m.status !== 'pending' || matchState(m, rules()).started;   // older matches
+  if (!fA && !fB && m.status !== 'pending') return true;      // started by an older version of the scorer that set no flags
+  return !!(side === 'A' ? fA : fB);
+}
+function needsSetup(m, role) {
+  return (role === 'both' ? ['A', 'B'] : [role]).some((side) => !sideReady(m, side));
+}
+
+/* The leg this device is looking at. On a one-team phone it "sticks" to a leg until
+   you tap Next leg, so the result card of a leg the other team just won stays visible
+   (and the phone can't jump ahead while it still owes throws for that leg). */
+function viewedLeg(m, ms, R, role) {
+  if (S.viewLeg && S.viewLeg <= R.legsPerMatch) return S.viewLeg;
+  if (role === 'both') return ms.currentLeg;
+  const l = ms.legs.find((x) => !x.state.over || legOwed(x.state, role) > 0);
+  const n = l ? l.n : R.legsPerMatch;
+  S.viewLeg = n;
+  return n;
+}
+
 // "The Honey Badgers" if the team has a name, otherwise "Team 7"
 const tt = (teamNum) => teamTitle(S.config, teamNum);
 
@@ -144,6 +187,9 @@ function toast(msg, type = '') {
 /* ================================================================== render == */
 
 function render() {
+  const ae = document.activeElement;
+  if (ae && ae.id && /^(tn-[AB]|lu-[AB]-\d)$/.test(ae.id)) { S.deferRender = true; return; }   // user is filling in setup
+  S.deferRender = false;
   const app = $('#app');
   if (!S.auth.ready) { app.innerHTML = '<div class="center-msg">Loading…</div>'; return; }
   if (!S.config || !S.players || (S.nightId && !S.matches)) { app.innerHTML = topbar({ title: 'Dart League' }) + '<div class="center-msg">Loading…</div>'; return; }
@@ -221,20 +267,52 @@ function selectOptions(choices, selectedId) {
   return out;
 }
 
-function setupView(m) {
-  const cols = ['A', 'B'].map((side) => {
+const draftLineup = (m, side, i) => {
+  const d = S.draft[m.id];
+  const v = d && d.lu && d.lu[`${side}-${i}`];
+  return v !== undefined ? v : ((side === 'A' ? m.lineupA : m.lineupB) || [])[i];
+};
+const draftName = (m, side) => {
+  const d = S.draft[m.id];
+  const v = d && d.tn && d.tn[side];
+  return v !== undefined ? v : customTeamName(S.config, side === 'A' ? m.teamA : m.teamB);
+};
+
+function setupView(m, role) {
+  // teams that still need to confirm their lineup on THIS device
+  const sides = role === 'both' ? ['A', 'B'].filter((sd) => !sideReady(m, sd)) : [role];
+
+  const cols = sides.map((side) => {
     const tn = side === 'A' ? m.teamA : m.teamB;
-    const lineup = side === 'A' ? m.lineupA : m.lineupB;
     const choices = lineupChoices(S.players, tn);
     const selects = [0, 1, 2].map((i) => `
       <label>Player ${i + 1}${i === 0 ? ' (throws first)' : ''}</label>
-      <select class="sel" id="lu-${side}-${i}">${selectOptions(choices, lineup && lineup[i])}</select>`).join('');
+      <select class="sel" id="lu-${side}-${i}">${selectOptions(choices, draftLineup(m, side, i))}</select>`).join('');
     return `<div class="setup-col ${side === 'A' ? 'a' : 'b'}"><h3>Team ${esc(tn)}</h3>
       <label>Team name (optional)</label>
-      <input class="txt" id="tn-${side}" maxlength="30" placeholder="e.g. The Honey Badgers" value="${esc(customTeamName(S.config, tn))}">
+      <input class="txt" id="tn-${side}" maxlength="30" placeholder="e.g. The Honey Badgers" value="${esc(draftName(m, side))}">
       ${selects}</div>`;
   }).join('');
 
+  const roleSeg = `
+    <div class="starter"><b>This device scores:</b>
+      <div class="seg role-seg">
+        <button class="${role === 'both' ? 'on' : ''}" data-act="set-role" data-role="both">Both teams</button>
+        <button class="${role === 'A' ? 'on' : ''}" data-act="set-role" data-role="A">${esc(tt(m.teamA))} only</button>
+        <button class="${role === 'B' ? 'on b' : ''}" data-act="set-role" data-role="B">${esc(tt(m.teamB))} only</button>
+      </div>
+    </div>
+    <p class="hint">One phone for the whole match? Pick <b>Both teams</b>. Each team on its own phone? Each team picks <b>its own name</b> here and confirms its own players.</p>`;
+
+  let otherLine = '';
+  if (role !== 'both') {
+    const other = role === 'A' ? 'B' : 'A';
+    otherLine = `<p class="hint">${esc(tt(other === 'A' ? m.teamA : m.teamB))}: ${sideReady(m, other) ? '<b style="color:var(--win)">✓ ready</b>' : 'still setting up on their device…'}</p>`;
+  } else if (sides.length === 1) {
+    otherLine = `<p class="hint">${esc(tt(sides[0] === 'A' ? m.teamB : m.teamA))} is already set up.</p>`;
+  }
+
+  const first = m.firstStarter === 'B' ? 'B' : 'A';
   return topbar({
     left: '<button class="btn small ghost" data-act="back">‹ Matches</button>',
     title: `Match ${matchNo(m)}<small>${esc(tt(m.teamA))} v ${esc(tt(m.teamB))} · setup</small>`,
@@ -242,16 +320,18 @@ function setupView(m) {
   }) + `
     <div class="setup">
       <h2>Who's playing?</h2>
+      ${roleSeg}
       <div class="setup-cols">${cols}</div>
+      ${otherLine}
       <div class="starter">
         <b>Who throws first in leg 1?</b>
         <div class="seg" id="first-starter">
-          <button class="on" data-act="pick-starter" data-side="A">${esc(tt(m.teamA))}</button>
-          <button data-act="pick-starter" data-side="B">${esc(tt(m.teamB))}</button>
+          <button class="${first === 'A' ? 'on' : ''}" data-act="pick-starter" data-side="A">${esc(tt(m.teamA))}</button>
+          <button class="${first === 'B' ? 'on b' : ''}" data-act="pick-starter" data-side="B">${esc(tt(m.teamB))}</button>
         </div>
       </div>
-      <p style="color:var(--chalk-dim);margin:0 0 14px">Legs then alternate. Use a <b>Dummy</b> if someone hasn't arrived yet — you can swap them in later without losing anything.</p>
-      <button class="btn good" style="width:100%;font-size:20px" data-act="start">Start match ▶</button>
+      <p class="hint">Legs then alternate. Use a <b>Dummy</b> if someone hasn't arrived yet — you can swap them in later without losing anything.</p>
+      <button class="btn good" style="width:100%;font-size:20px" data-act="start">${role === 'both' ? 'Start match ▶' : 'Ready — start scoring ▶'}</button>
     </div>`;
 }
 
@@ -260,9 +340,10 @@ function setupView(m) {
 function matchView(m) {
   const R = rules();
   const ms = matchState(m, R);
-  if (!ms.started && m.status === 'pending') return setupView(m);
+  const role = getRole(m);
+  if (needsSetup(m, role)) return setupView(m, role);
 
-  const n = (S.viewLeg && S.viewLeg <= R.legsPerMatch) ? S.viewLeg : ms.currentLeg;
+  const n = viewedLeg(m, ms, R, role);
   const leg = (m.legs && m.legs[n]) || { a: [], b: [] };
   const st = legState(leg, starterFor(m, n), R);
 
@@ -279,51 +360,68 @@ function matchView(m) {
   });
 
   return bar + `<div class="match-grid">
-    ${teamPanel(m, 'A', n, leg, st, ms, R)}
-    ${padPanel(m, n, leg, st, ms, R)}
-    ${teamPanel(m, 'B', n, leg, st, ms, R)}
+    ${teamPanel(m, 'A', n, leg, st, ms, R, role)}
+    ${padPanel(m, n, leg, st, ms, R, role)}
+    ${teamPanel(m, 'B', n, leg, st, ms, R, role)}
   </div>`;
 }
 
-function currentThrower(m, n, leg, st) {
-  if (st.over) return null;
-  const side = st.next;
+/* Who is about to enter a score on THIS device (null = keypad not needed).
+   One phone for both teams: whoever throws next. One-team phone: always my team —
+   entries are allowed even when it isn't strictly my turn, because the other team's
+   marker may be a throw behind. After the other team wins a leg, I can still enter
+   the throws I owe for it. */
+function currentThrower(m, n, leg, st, role = 'both') {
+  let side;
+  if (role === 'both') {
+    if (st.over) return null;
+    side = st.next;
+  } else {
+    if (st.over && legOwed(st, role) === 0) return null;
+    side = role;
+  }
   const lineup = lineupFor(m, n, side);
   const pid = (S.override && lineup.includes(S.override)) ? S.override : nextPlayer(lineup, leg[keyOf(side)]);
   return { side, pid, lineup };
 }
 
-function teamPanel(m, side, n, leg, st, ms, R) {
+function teamPanel(m, side, n, leg, st, ms, R, role = 'both') {
   const tn = side === 'A' ? m.teamA : m.teamB;
   const sd = st[side];
   const lineup = lineupFor(m, n, side);
-  const thrower = currentThrower(m, n, leg, st);
-  const active = !!thrower && thrower.side === side;
+  const mine = role === 'both' || role === side;               // can this device edit this team?
+  const thrower = currentThrower(m, n, leg, st, role);
+  const chipsLive = !!thrower && thrower.side === side;        // player buttons usable
+  const active = !st.over && st.next === side;                 // whose turn it really is (the glow)
   const pts = side === 'A' ? ms.a : ms.b;
   const ton = (id) => R.tonThreshold[P(id) && P(id).gender === 'F' ? 'F' : 'M'];
 
   const tags = [
+    role === side ? '<span class="tag you">You</span>' : '',
     active ? '<span class="tag throw">▶ Throwing</span>' : '',
     st.under100First === side ? `<span class="tag bonus">Under ${R.underThreshold} first +${R.under100Points}</span>` : '',
     st.winner === side ? `<span class="tag win">Finished · +${R.finishPoints}</span>` : '',
   ].join('');
 
   const chips = lineup.map((id) => {
-    const sel = active && id === thrower.pid;
-    return active
+    const sel = chipsLive && id === thrower.pid;
+    return chipsLive
       ? `<button class="pchip ${sel ? 'sel' : ''}" data-act="pick" data-p="${esc(id)}">${esc(shortOf(id))}</button>`
       : `<span class="pchip static">${esc(shortOf(id))}</span>`;
   }).join('');
 
   const turns = sd.turns.map((t, i) => {
     const cls = [t.finish ? 'fin' : '', t.bust ? 'bust' : '', R.maxShots.includes(t.s) ? 'max' : (t.s >= ton(t.p) ? 'ton' : '')].join(' ');
-    return `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}"><span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b></button>`;
+    const inner = `<span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b>`;
+    return mine
+      ? `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}">${inner}</button>`
+      : `<span class="tchip ${cls}">${inner}</span>`;          // the other team's turns are read-only here
   }).join('');
 
   const numCls = sd.finished ? 'done' : (sd.remaining < R.underThreshold ? 'under' : '');
 
   return `
-    <section class="team ${side === 'B' ? 'b' : ''} ${active ? 'active' : ''} panel-${side.toLowerCase()}">
+    <section class="team ${side === 'B' ? 'b' : ''} ${active ? 'active' : ''} ${role === side ? 'mine' : ''} panel-${side.toLowerCase()}">
       <div class="team-head">
         <span class="tok">${esc(tn)}</span>
         <div class="names${customTeamName(S.config, tn) ? ' custom' : ''}">${esc(customTeamName(S.config, tn) || lineup.map(shortOf).join(', '))}</div>
@@ -335,20 +433,22 @@ function teamPanel(m, side, n, leg, st, ms, R) {
       </div>
       <div class="tags">${tags}</div>
       <div class="pchips">${chips}</div>
-      <div class="turns-label"><span>Turns (${sd.shots}) · tap to edit</span>
-        <button class="btn small ghost" data-act="subs" data-side="${side}">Change players</button></div>
+      <div class="turns-label"><span>Turns (${sd.shots})${mine ? ' · tap to edit' : ''}</span>
+        ${mine ? `<button class="btn small ghost" data-act="subs" data-side="${side}">Change players</button>` : ''}</div>
       <div class="turns">${turns || '<span style="color:var(--chalk-dim);font-size:13px">No turns yet</span>'}</div>
     </section>`;
 }
 
-function padPanel(m, n, leg, st, ms, R) {
-  const canUndo = st.A.shots + st.B.shots > 0;
+function padPanel(m, n, leg, st, ms, R, role = 'both') {
+  const myShots = role === 'both' ? st.A.shots + st.B.shots : st[role].shots;
+  const canUndo = myShots > 0;
   const undoBtn = `<button class="btn" data-act="undo" ${canUndo ? '' : 'disabled'}>↶ Undo<span class="long"> last turn</span></button>`;
   const moreBtn = '<button class="btn ghost" data-act="more">More…</button>';
   const turnsBtn = '<button class="btn phone-only" data-act="turns">Turns</button>';
+  const t = currentThrower(m, n, leg, st, role);
 
-  /* Leg finished */
-  if (st.over) {
+  /* Nothing to enter: show the leg result */
+  if (!t) {
     const label = (side) => {
       const p = st.pts[side];
       const parts = [];
@@ -379,11 +479,10 @@ function padPanel(m, n, leg, st, ms, R) {
     </section>`;
   }
 
-  /* Leg in play */
-  const t = currentThrower(m, n, leg, st);
+  /* Keypad */
   const tn = t.side === 'A' ? m.teamA : m.teamB;
   const rem = st[t.side].remaining;
-  const noTurns = !canUndo;
+  const noTurns = st.A.shots + st.B.shots === 0;
   const starter = starterFor(m, n);
   const starterRow = noTurns ? `
     <div class="starter-row">Leg ${n} starts:
@@ -392,10 +491,21 @@ function padPanel(m, n, leg, st, ms, R) {
         <button class="${starter === 'B' ? 'on b' : ''}" data-act="set-starter" data-side="B">${esc(tt(m.teamB))}</button>
       </div></div>` : '';
 
+  let who;
+  if (role !== 'both' && st.over) {
+    const owed = legOwed(st, role);
+    const winnerName = tt(st.winner === 'A' ? m.teamA : m.teamB);
+    who = `${esc(winnerName)} finished — enter your last ${owed} throw${owed > 1 ? 's' : ''} for this leg`;
+  } else if (role !== 'both' && st.next !== role) {
+    who = `${esc(tt(tn))} · <b>${esc(shortOf(t.pid))}</b> next · other team is throwing`;
+  } else {
+    who = `${esc(tt(tn))} · <b>${esc(shortOf(t.pid))}</b> to throw · ${rem} left`;
+  }
+
   return `<section class="pad">
     <div class="pchips phone-only">${t.lineup.map((id) => `<button class="pchip ${id === t.pid ? 'sel' : ''}" data-act="pick" data-p="${esc(id)}">${esc(shortOf(id))}</button>`).join('')}</div>
     <div class="entry-box">
-      <div class="who">${esc(tt(tn))} · <b>${esc(shortOf(t.pid))}</b> to throw · ${rem} left</div>
+      <div class="who">${who}</div>
       <div class="val ${S.entry === '' ? 'empty' : ''}" id="entry-val">${S.entry === '' ? '0' : esc(S.entry)}</div>
     </div>
     <div class="quick">${QUICK_SCORES.map((q) => `<button data-act="quick" data-v="${q}">${q}</button>`).join('')}</div>
@@ -417,12 +527,14 @@ function entryContext() {
   const m = findMatch(S.route.id);
   if (!m) return null;
   const R = rules();
+  const role = getRole(m);
+  if (needsSetup(m, role)) return null;
   const ms = matchState(m, R);
-  if (!ms.started && m.status === 'pending') return null;
-  const n = (S.viewLeg && S.viewLeg <= R.legsPerMatch) ? S.viewLeg : ms.currentLeg;
+  const n = viewedLeg(m, ms, R, role);
   const leg = (m.legs && m.legs[n]) || { a: [], b: [] };
   const st = legState(leg, starterFor(m, n), R);
-  return { m, R, ms, n, leg, st };
+  const thrower = currentThrower(m, n, leg, st, role);
+  return { m, R, ms, n, leg, st, role, thrower };
 }
 
 function updateEntryDisplay() {
@@ -434,7 +546,7 @@ function updateEntryDisplay() {
 
 function press(k) {
   const ctx = entryContext();
-  if (!ctx || ctx.st.over) return;
+  if (!ctx || !ctx.thrower) return;
   if (k === 'back') { S.entry = S.entry.slice(0, -1); }
   else if (/^\d$/.test(k)) {
     const next = (S.entry === '0' ? '' : S.entry) + k;
@@ -447,11 +559,10 @@ function press(k) {
 
 async function enterScore() {
   const ctx = entryContext();
-  if (!ctx || ctx.st.over) return;
-  const { m, n, leg, st } = ctx;
+  if (!ctx || !ctx.thrower) return;
+  const { m, n, st, thrower } = ctx;
   if (S.entry === '') { toast('Type the score first (0 if they missed)', 'error'); return; }
   const s = parseInt(S.entry, 10);
-  const thrower = currentThrower(m, n, leg, st);
   const rem = st[thrower.side].remaining;
   const c = classifyEntry(rem, s);
 
@@ -496,8 +607,9 @@ async function commitTurn(ctx, thrower, s, bust) {
 async function undoLast() {
   const ctx = entryContext();
   if (!ctx) return;
-  const { m, n, leg, st } = ctx;
-  const side = lastThrower(st);
+  const { m, n, leg, st, role } = ctx;
+  // one-team phone: undo removes MY team's last turn; one-phone mode: whoever threw last
+  const side = role === 'both' ? lastThrower(st) : ((leg[keyOf(role)] || []).length ? role : null);
   if (!side) return;
   const key = keyOf(side);
   const turns = (leg[key] || []).slice(0, -1);
@@ -547,18 +659,20 @@ function confirmModal({ title, text, yes = 'Yes', no = 'Cancel', danger = false 
 function openTurns() {
   const ctx = entryContext();
   if (!ctx) return;
-  const { m, n, leg, st, R } = ctx;
+  const { m, n, leg, st, R, role } = ctx;
   const ton = (id) => R.tonThreshold[P(id) && P(id).gender === 'F' ? 'F' : 'M'];
   const col = (side) => {
     const tn = side === 'A' ? m.teamA : m.teamB;
+    const mine = role === 'both' || role === side;
     const chips = st[side].turns.map((t, i) => {
       const cls = [t.finish ? 'fin' : '', t.bust ? 'bust' : '', R.maxShots.includes(t.s) ? 'max' : (t.s >= ton(t.p) ? 'ton' : '')].join(' ');
-      return `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}"><span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b></button>`;
+      const inner = `<span class="who">${esc(firstName(t.p))}</span><b>${t.s}</b>`;
+      return mine ? `<button class="tchip ${cls}" data-act="edit" data-side="${side}" data-i="${i}">${inner}</button>` : `<span class="tchip ${cls}">${inner}</span>`;
     }).join('') || '<span style="color:var(--chalk-dim);font-size:13px">No turns yet</span>';
     return `<div class="sheet-col ${side === 'B' ? 'b' : ''}">
       <h4>${esc(tt(tn))} · ${st[side].remaining} left</h4>
       <div class="sheet-turns">${chips}</div>
-      <button class="btn small" data-act="subs" data-side="${side}">Change players</button>
+      ${mine ? `<button class="btn small" data-act="subs" data-side="${side}">Change players</button>` : ''}
     </div>`;
   };
   showModal(`
@@ -570,7 +684,7 @@ function openTurns() {
 
 function openEdit(side, i) {
   const ctx = entryContext();
-  if (!ctx) return;
+  if (!ctx || (ctx.role !== 'both' && side !== ctx.role)) return;      // can't edit the other team's turns
   const { m, n, leg, R } = ctx;
   const key = keyOf(side);
   const turn = (leg[key] || [])[i];
@@ -643,7 +757,7 @@ async function deleteEditedTurn(side, i) {
 
 function openSubs(side) {
   const ctx = entryContext();
-  if (!ctx) return;
+  if (!ctx || (ctx.role !== 'both' && side !== ctx.role)) return;
   const { m, n } = ctx;
   const tn = side === 'A' ? m.teamA : m.teamB;
   const lineup = lineupFor(m, n, side);
@@ -679,6 +793,23 @@ async function saveSubs(side) {
   } catch (e) {
     err.textContent = 'Could not save — check the connection.';
   }
+}
+
+function openScoringMode() {
+  const ctx = entryContext();
+  if (!ctx) return;
+  const { m, role } = ctx;
+  const opt = (r, label, sub) => `<button class="btn ${role === r ? 'primary' : ''}" data-mact="role-${r}" style="text-align:left">
+      <b>${label}</b><br><span style="font-weight:400;font-size:13px;opacity:.85">${sub}</span></button>`;
+  showModal(`
+    <h3>Scoring mode</h3>
+    <p>Who does this phone score? Each team on its own phone: pick that team on each phone.</p>
+    <div style="display:grid;gap:10px">
+      ${opt('both', 'Both teams', 'One phone enters every throw (the usual way)')}
+      ${opt('A', `${esc(tt(m.teamA))} only`, 'This phone is for this team; the other team scores on its own phone')}
+      ${opt('B', `${esc(tt(m.teamB))} only`, 'This phone is for this team; the other team scores on its own phone')}
+      <button class="btn" data-mact="no">Close</button>
+    </div>`);
 }
 
 function openTeamNames() {
@@ -736,6 +867,7 @@ function openMore() {
     <div style="display:grid;gap:10px">
       ${starterBlock}
       <button class="btn" data-mact="team-names">Team names…</button>
+      <button class="btn" data-mact="scoring-mode">Scoring mode: ${ctx.role === 'both' ? 'both teams' : esc(tt(ctx.role === 'A' ? m.teamA : m.teamB)) + ' only'}…</button>
       ${m.status === 'final' ? '' : '<button class="btn primary" data-mact="end-match">End match now (mark final)</button>'}
       ${m.status === 'final' ? '<button class="btn" data-mact="reopen">Re-open match</button>' : ''}
       <button class="btn danger" data-mact="clear-match">Clear ALL scores for this match</button>
@@ -770,7 +902,7 @@ document.addEventListener('click', async (e) => {
     case 'nextleg': {
       if (!ctx) return;
       const { ms, n, R } = ctx;
-      S.viewLeg = n < R.legsPerMatch ? n + 1 : ms.currentLeg;
+      S.viewLeg = n < R.legsPerMatch ? n + 1 : ms.currentLeg;   // (last leg: stay put / go to the first open one)
       S.entry = ''; S.override = null;
       return render();
     }
@@ -782,9 +914,14 @@ document.addEventListener('click', async (e) => {
       return;
     }
     case 'pick-starter': {
-      document.querySelectorAll('#first-starter button').forEach((b) => { b.classList.remove('on', 'b'); });
-      el.classList.add('on');
-      if (el.dataset.side === 'B') el.classList.add('b');
+      // saved straight away so both phones see who throws first
+      const m = findMatch(S.route.id);
+      if (m) S.store.setMatchFields(S.nightId, m.id, { firstStarter: el.dataset.side }).catch(() => toast('Could not save — check the connection', 'error'));
+      return;
+    }
+    case 'set-role': {
+      const m = findMatch(S.route.id);
+      if (m) { setRole(m, el.dataset.role); S.viewLeg = null; render(); }
       return;
     }
     case 'start': return startMatch();
@@ -800,26 +937,30 @@ document.addEventListener('click', async (e) => {
 async function startMatch() {
   const m = findMatch(S.route.id);
   if (!m) return;
-  const read = (side) => [0, 1, 2].map((i) => $(`#lu-${side}-${i}`).value);
-  const a = read('A'), b = read('B');
-  const bad = (ids) => ids.some((x) => !x);
-  if (bad(a) || bad(b)) { toast('Pick three players for each team (use Dummy if someone is missing)', 'error'); return; }
-  const dup = (ids) => { const named = ids.filter((id) => !(P(id) && P(id).dummy)); return new Set(named).size !== named.length; };
-  if (dup(a) || dup(b)) { toast('The same player is picked twice', 'error'); return; }
-  // save any team names typed on the setup screen
+  const role = getRole(m);
+  const sides = role === 'both' ? ['A', 'B'].filter((sd) => !sideReady(m, sd)) : [role];
+
+  const fields = {};
   const names = {};
-  for (const side of ['A', 'B']) {
+  for (const side of sides) {
+    const ids = [0, 1, 2].map((i) => (($(`#lu-${side}-${i}`) || {}).value || ''));
+    if (ids.some((x) => !x)) { toast('Pick three players (use Dummy if someone is missing)', 'error'); return; }
+    const named = ids.filter((id) => !(P(id) && P(id).dummy));
+    if (new Set(named).size !== named.length) { toast('The same player is picked twice', 'error'); return; }
+    fields[side === 'A' ? 'lineupA' : 'lineupB'] = ids;
+    fields[side === 'A' ? 'readyA' : 'readyB'] = true;
     const tn = side === 'A' ? m.teamA : m.teamB;
     const v = (($(`#tn-${side}`) || {}).value || '').trim();
     if (v !== customTeamName(S.config, tn)) names[tn] = v;
   }
+  if (role === 'both') fields.status = 'live';
   if (Object.keys(names).length) S.store.saveTeamNames(names).catch(() => toast('Could not save team names', 'error'));
-  const firstBtn = document.querySelector('#first-starter button.on');
-  const first = firstBtn && firstBtn.dataset.side === 'B' ? 'B' : 'A';
   try {
-    await S.store.setMatchFields(S.nightId, m.id, { lineupA: a, lineupB: b, firstStarter: first, status: 'live' });
+    await S.store.setMatchFields(S.nightId, m.id, fields);
+    delete S.draft[m.id];
+    S.viewLeg = null;
   } catch (err) {
-    toast('Could not start the match — check the connection', 'error');
+    toast('Could not save — check the connection', 'error');
   }
 }
 
@@ -837,6 +978,12 @@ async function handleModalAction(el) {
     }
     case 'subs-save': return saveSubs(el.dataset.side);
     case 'team-names': return openTeamNames();
+    case 'scoring-mode': return openScoringMode();
+    case 'role-both': case 'role-A': case 'role-B': {
+      const m = findMatch(S.route.id);
+      if (m) { setRole(m, act.slice(5)); S.viewLeg = null; S.entry = ''; S.override = null; closeModal(true); render(); }
+      return;
+    }
     case 'names-save': return saveTeamNamesModal();
     case 'end-match':
       if (ctx) { await S.store.setMatchFields(S.nightId, ctx.m.id, { status: 'final' }); closeModal(true); go('#/'); }
@@ -872,4 +1019,24 @@ $('#modal').addEventListener('keydown', (e) => {
     const save = document.querySelector('[data-mact="edit-save"]');
     if (save) saveEdit(save.dataset.side, parseInt(save.dataset.i, 10));
   }
+});
+
+
+// Remember what's typed/picked on the setup screen so a live update from the other phone can't wipe it
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t && /^lu-[AB]-\d$/.test(t.id) && S.route.id) {
+    const d = (S.draft[S.route.id] = S.draft[S.route.id] || { lu: {}, tn: {} });
+    d.lu[t.id.slice(3)] = t.value;
+  }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t && /^tn-[AB]$/.test(t.id) && S.route.id) {
+    const d = (S.draft[S.route.id] = S.draft[S.route.id] || { lu: {}, tn: {} });
+    d.tn[t.id.slice(3)] = t.value;
+  }
+});
+document.addEventListener('focusout', () => {
+  if (S.deferRender) setTimeout(() => render(), 120);
 });

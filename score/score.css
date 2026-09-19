@@ -486,3 +486,18 @@ dialog#modal label { display: block; font-size: 12px; letter-spacing: 0.08em; te
 @media (max-height: 500px) and (min-width: 601px) {
   .team-head .names.custom { display: -webkit-box; }   /* landscape phones hide player lists, but show a team name */
 }
+
+/* ==========================================================================
+   Two-phone scoring (each team scores on its own phone)
+   ========================================================================== */
+.hint { color: var(--chalk-dim); margin: 0 0 14px; line-height: 1.45; font-size: 14px; }
+.role-seg { display: flex; width: 100%; max-width: 640px; }
+.role-seg button { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 10px 8px; font-size: 15px; }
+.tag.you { background: var(--chalk); color: #111; }
+.team.mine { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset; }
+.team.mine.active { box-shadow: 0 0 0 2px var(--side-a) inset; }
+.team.b.mine.active { box-shadow: 0 0 0 2px var(--side-b) inset; }
+span.tchip { cursor: default; }          /* the other team's turns: shown, not editable */
+@media (max-width: 600px) {
+  .role-seg button { font-size: 13px; padding: 10px 4px; }
+}
